@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import type { ContactType } from '../../types';
 
 const PRESET_COLORS = [
@@ -16,6 +17,7 @@ interface AddContactTypeModalProps {
 }
 
 const AddContactTypeModal: React.FC<AddContactTypeModalProps> = ({ isOpen, onClose, onTypeCreated }) => {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3B82F6');
   const [saving, setSaving] = useState(false);
@@ -34,8 +36,7 @@ const AddContactTypeModal: React.FC<AddContactTypeModalProps> = ({ isOpen, onClo
     setError('');
 
     try {
-      const currentUser = await supabase.auth.getUser();
-      const userId = currentUser.data.user?.id || 'user-1';
+      const userId = user!.id;
 
       const { data, error: insertError } = await supabase
         .from('contact_types')

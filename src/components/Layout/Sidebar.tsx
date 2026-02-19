@@ -20,9 +20,10 @@ import {
 
 interface SidebarProps {
   onSignOut?: () => void;
+  userEmail?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onSignOut }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedModules, setExpandedModules] = useState<string[]>(['crm']);
 
@@ -147,6 +148,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut }) => {
       </nav>
 
       <div className="p-6 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+        {userEmail && (
+          <div className="px-4 py-2 mb-2">
+            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+          </div>
+        )}
         <NavLink
           to="/settings"
           className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 group"

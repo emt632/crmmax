@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 import ContactsList from './components/Contacts/ContactsList';
 import ContactForm from './components/Contacts/ContactForm';
@@ -9,40 +11,38 @@ import TouchpointsList from './components/Touchpoints/TouchpointsList';
 import TouchpointForm from './components/Touchpoints/TouchpointForm';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
-import { signOut } from './lib/supabase';
+import Login from './pages/Login';
 
 function App() {
-  console.log('App component is rendering...');
-
-  const handleSignOut = async () => {
-    await signOut();
-    // Handle post-signout logic
-  };
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout onSignOut={handleSignOut} />}>
-          <Route index element={<Dashboard />} />
-          <Route path="contacts" element={<ContactsList />} />
-          <Route path="contacts/new" element={<ContactForm />} />
-          <Route path="contacts/:id" element={<ContactForm />} />
-          <Route path="organizations" element={<OrganizationsList />} />
-          <Route path="organizations/new" element={<OrganizationForm />} />
-          <Route path="organizations/:id" element={<OrganizationForm />} />
-          <Route path="touchpoints" element={<TouchpointsList />} />
-          <Route path="touchpoints/new" element={<TouchpointForm />} />
-          <Route path="touchpoints/:id" element={<TouchpointForm />} />
-          <Route path="ride-alongs" element={<ComingSoon module="Ride-Alongs" />} />
-          <Route path="pr-requests" element={<ComingSoon module="PR Requests" />} />
-          <Route path="donors" element={<ComingSoon module="Donors" />} />
-          <Route path="campaigns" element={<ComingSoon module="Campaigns" />} />
-          <Route path="grants" element={<ComingSoon module="Grants" />} />
-          <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="contacts" element={<ContactsList />} />
+              <Route path="contacts/new" element={<ContactForm />} />
+              <Route path="contacts/:id" element={<ContactForm />} />
+              <Route path="organizations" element={<OrganizationsList />} />
+              <Route path="organizations/new" element={<OrganizationForm />} />
+              <Route path="organizations/:id" element={<OrganizationForm />} />
+              <Route path="touchpoints" element={<TouchpointsList />} />
+              <Route path="touchpoints/new" element={<TouchpointForm />} />
+              <Route path="touchpoints/:id" element={<TouchpointForm />} />
+              <Route path="ride-alongs" element={<ComingSoon module="Ride-Alongs" />} />
+              <Route path="pr-requests" element={<ComingSoon module="PR Requests" />} />
+              <Route path="donors" element={<ComingSoon module="Donors" />} />
+              <Route path="campaigns" element={<ComingSoon module="Campaigns" />} />
+              <Route path="grants" element={<ComingSoon module="Grants" />} />
+              <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

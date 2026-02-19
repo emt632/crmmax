@@ -13,11 +13,13 @@ import {
 } from 'lucide-react';
 import type { Organization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
 
 const OrganizationForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const isEditing = !!id;
 
   const [loading, setLoading] = useState(false);
@@ -115,8 +117,7 @@ const OrganizationForm: React.FC = () => {
     setSaving(true);
 
     try {
-      const currentUser = await supabase.auth.getUser();
-      const userId = currentUser.data.user?.id || 'user-1';
+      const userId = user!.id;
 
       const orgData = {
         ...formData,
