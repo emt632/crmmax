@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { Plus, User, Building2, Phone, X } from 'lucide-react';
+import { Plus, User, Building2, Phone, X, ContactRound } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fabItems = [
   { to: '/contacts/new', label: 'Contact', icon: User, color: 'bg-blue-500' },
+  { to: '/share-target', label: 'Quick Import', icon: ContactRound, color: 'bg-sky-500' },
   { to: '/organizations/new', label: 'Organization', icon: Building2, color: 'bg-emerald-500' },
   { to: '/touchpoints/new', label: 'Touchpoint', icon: Phone, color: 'bg-purple-500' },
 ];
