@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowLeft, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import ll3Logo from '../assets/ll3-logo.png';
 
 const Login: React.FC = () => {
   const { user, loading, signIn } = useAuth();
@@ -71,11 +72,8 @@ const Login: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl shadow-md mb-4">
-            <span className="text-white font-bold text-xl">LL3</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Life Link III</h1>
-          <p className="text-gray-500 mt-1">CRM System</p>
+          <img src={ll3Logo} alt="Life Link III" className="h-12 sm:h-14 mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">CRM System</p>
         </div>
 
         {/* Card */}

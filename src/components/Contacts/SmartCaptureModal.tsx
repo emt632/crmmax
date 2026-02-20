@@ -311,7 +311,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
       <div className="relative bg-white shadow-lg w-full h-full sm:h-auto sm:rounded-xl sm:max-w-lg sm:mx-4 overflow-hidden sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2">
             {phase === 'preview' && (
               <button
@@ -363,7 +363,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
         <div className="overflow-y-auto flex-1">
           {/* INPUT PHASE */}
           {phase === 'input' && (
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               {/* Text Tab */}
               {activeTab === 'text' && (
                 <>
@@ -373,10 +373,9 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                   <textarea
                     value={signatureText}
                     onChange={(e) => setSignatureText(e.target.value)}
-                    rows={8}
+                    rows={6}
                     placeholder={"John Smith\nDirector of Operations\nAcme Corp\n(555) 123-4567\njohn.smith@acme.com\n123 Main St, Suite 100\nAnytown, MN 55001"}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all font-mono text-sm"
-                    autoFocus
                   />
                 </>
               )}
@@ -388,68 +387,49 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                     Upload or take a photo of a business card.
                   </p>
 
-                  {/* Drag & drop zone */}
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                      const file = e.dataTransfer.files[0];
-                      if (file?.type.startsWith('image/')) handleImageSelected(file);
-                    }}
-                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                      isDragOver
-                        ? 'border-purple-500 bg-purple-50'
-                        : imagePreviewUrl
-                          ? 'border-gray-200 bg-gray-50'
-                          : 'border-gray-300 bg-gray-50'
-                    }`}
-                  >
-                    {imagePreviewUrl ? (
-                      <div>
-                        <img
-                          src={imagePreviewUrl}
-                          alt="Business card"
-                          className="max-h-48 mx-auto rounded-lg shadow-md"
-                        />
-                        <button
-                          onClick={() => {
-                            if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                            setImageFile(null);
-                            setImagePreviewUrl(null);
-                          }}
-                          className="mt-3 text-sm text-red-600 hover:text-red-800"
-                        >
-                          Remove image
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <Camera className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500">Drag & drop an image here</p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex space-x-3">
-                    <label className="flex-1 cursor-pointer">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageSelected(file);
-                        }}
+                  {/* Image preview / upload area */}
+                  {imagePreviewUrl ? (
+                    <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-center">
+                      <img
+                        src={imagePreviewUrl}
+                        alt="Business card"
+                        className="max-h-40 sm:max-h-48 mx-auto rounded-lg shadow-md"
                       />
-                      <span className="flex items-center justify-center px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Image
-                      </span>
-                    </label>
+                      <button
+                        onClick={() => {
+                          if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+                          setImageFile(null);
+                          setImagePreviewUrl(null);
+                        }}
+                        className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Remove image
+                      </button>
+                    </div>
+                  ) : (
+                    /* Drag & drop zone — hidden on mobile, shown on desktop */
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(false);
+                        const file = e.dataTransfer.files[0];
+                        if (file?.type.startsWith('image/')) handleImageSelected(file);
+                      }}
+                      className={`hidden sm:block border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                        isDragOver
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-300 bg-gray-50'
+                      }`}
+                    >
+                      <Camera className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-500">Drag & drop an image here</p>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <label className="flex-1 cursor-pointer">
                       <input
                         ref={cameraInputRef}
@@ -462,9 +442,25 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                           if (file) handleImageSelected(file);
                         }}
                       />
-                      <span className="flex items-center justify-center px-4 py-2.5 border-2 border-purple-200 rounded-xl text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
-                        <Camera className="w-4 h-4 mr-2" />
+                      <span className="flex items-center justify-center px-4 py-3 sm:py-2.5 border-2 border-purple-200 rounded-xl text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
+                        <Camera className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
                         Take Photo
+                      </span>
+                    </label>
+                    <label className="flex-1 cursor-pointer">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageSelected(file);
+                        }}
+                      />
+                      <span className="flex items-center justify-center px-4 py-3 sm:py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <Upload className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
+                        Choose from Library
                       </span>
                     </label>
                   </div>
@@ -481,7 +477,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
 
           {/* PREVIEW PHASE */}
           {phase === 'preview' && (
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-5">
               {/* Contact Section */}
               <div className="space-y-3">
                 <label className="flex items-center space-x-2 cursor-pointer">
@@ -495,13 +491,13 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                   <span className="font-medium text-gray-900">Create Contact</span>
                 </label>
                 {createContact && (
-                  <div className="grid grid-cols-2 gap-3 pl-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 sm:pl-6">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">First Name</label>
                       <input
                         value={parsedContact.first_name || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, first_name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
@@ -509,55 +505,59 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                       <input
                         value={parsedContact.last_name || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, last_name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <label className="block text-xs text-gray-500 mb-1">Title</label>
                       <input
                         value={parsedContact.title || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Work Email</label>
                       <input
+                        type="email"
                         value={parsedContact.email_work || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, email_work: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Personal Email</label>
                       <input
+                        type="email"
                         value={parsedContact.email_personal || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, email_personal: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Mobile Phone</label>
                       <input
+                        type="tel"
                         value={parsedContact.phone_mobile || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, phone_mobile: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Office Phone</label>
                       <input
+                        type="tel"
                         value={parsedContact.phone_office || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, phone_office: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <label className="block text-xs text-gray-500 mb-1">Address</label>
                       <input
                         value={parsedContact.address_line1 || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, address_line1: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
@@ -565,7 +565,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                       <input
                         value={parsedContact.city || ''}
                         onChange={(e) => setParsedContact(prev => ({ ...prev, city: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -574,15 +574,16 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                         <input
                           value={parsedContact.state || ''}
                           onChange={(e) => setParsedContact(prev => ({ ...prev, state: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">ZIP</label>
                         <input
+                          inputMode="numeric"
                           value={parsedContact.zip || ''}
                           onChange={(e) => setParsedContact(prev => ({ ...prev, zip: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                         />
                       </div>
                     </div>
@@ -606,13 +607,13 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                   )}
                 </label>
                 {createOrg && (
-                  <div className="grid grid-cols-2 gap-3 pl-6">
-                    <div className="col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 sm:pl-6">
+                    <div className="sm:col-span-2">
                       <label className="block text-xs text-gray-500 mb-1">Organization Name</label>
                       <input
                         value={parsedOrg.name}
                         onChange={(e) => setParsedOrg(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                       {existingOrganizations.some(
                         o => o.name.toLowerCase() === parsedOrg.name.trim().toLowerCase()
@@ -625,25 +626,28 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Phone</label>
                       <input
+                        type="tel"
                         value={parsedOrg.phone}
                         onChange={(e) => setParsedOrg(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Email</label>
                       <input
+                        type="email"
                         value={parsedOrg.email}
                         onChange={(e) => setParsedOrg(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <label className="block text-xs text-gray-500 mb-1">Website</label>
                       <input
+                        type="url"
                         value={parsedOrg.website}
                         onChange={(e) => setParsedOrg(prev => ({ ...prev, website: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
                       />
                     </div>
                   </div>
@@ -660,11 +664,11 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0">
+        <div className="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 flex-shrink-0">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
           >
             Cancel
           </button>
@@ -673,7 +677,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleParseText}
               disabled={parsing || !signatureText.trim()}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
+              className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors text-sm font-medium"
             >
               {parsing ? (
                 <>
@@ -693,7 +697,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleParseImage}
               disabled={parsing || !imageFile}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
+              className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors text-sm font-medium"
             >
               {parsing ? (
                 <>
@@ -713,7 +717,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={saving || (!createContact && !createOrg)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
+              className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors text-sm font-medium"
             >
               {saving ? (
                 <>

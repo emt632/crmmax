@@ -15,6 +15,7 @@ import Reports from './pages/Reports';
 import ContactImport from './pages/ContactImport';
 import ShareTarget from './pages/ShareTarget';
 import Login from './pages/Login';
+import TeamActivity from './pages/TeamActivity';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
               <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
               <Route path="share-target" element={<ShareTarget />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="team-activity" element={<TeamActivity />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Route>

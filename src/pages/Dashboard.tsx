@@ -9,15 +9,11 @@ import {
   Video,
   Users as UsersIcon,
   MessageSquare,
-  Plane,
-  Megaphone,
-  Heart,
   Calendar,
   Activity,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Plus
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,9 +65,7 @@ const Dashboard: React.FC = () => {
     totalContacts: 0,
     totalOrganizations: 0,
     touchpointsThisWeek: 0,
-    upcomingRideAlongs: 0,
-    pendingPRRequests: 0,
-    activeDonors: 0
+    pendingFollowUps: 0,
   });
 
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -97,20 +91,18 @@ const Dashboard: React.FC = () => {
       weekStart.setDate(now.getDate() - now.getDay() + 1);
       weekStart.setHours(0, 0, 0, 0);
 
-      const [contactsRes, orgsRes, touchpointsRes, donorsRes] = await Promise.all([
+      const [contactsRes, orgsRes, touchpointsRes, followUpsRes] = await Promise.all([
         supabase.from('contacts').select('id', { count: 'exact', head: true }),
         supabase.from('organizations').select('id', { count: 'exact', head: true }),
         supabase.from('touchpoints').select('id', { count: 'exact', head: true }).gte('date', weekStart.toISOString()),
-        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('is_donor', true),
+        supabase.from('touchpoints').select('id', { count: 'exact', head: true }).eq('follow_up_required', true).eq('follow_up_completed', false),
       ]);
 
       setStats({
         totalContacts: contactsRes.count || 0,
         totalOrganizations: orgsRes.count || 0,
         touchpointsThisWeek: touchpointsRes.count || 0,
-        upcomingRideAlongs: 0,
-        pendingPRRequests: 0,
-        activeDonors: donorsRes.count || 0,
+        pendingFollowUps: followUpsRes.count || 0,
       });
     } catch {
       // Keep defaults
@@ -250,7 +242,7 @@ const Dashboard: React.FC = () => {
 
   const statCards = [
     {
-      title: 'Total Contacts',
+      title: 'Contacts',
       value: stats.totalContacts,
       icon: Users,
       lightBg: 'bg-blue-50',
@@ -266,7 +258,7 @@ const Dashboard: React.FC = () => {
       link: '/organizations'
     },
     {
-      title: 'Touchpoints (Week)',
+      title: 'Touchpoints This Week',
       value: stats.touchpointsThisWeek,
       icon: Phone,
       lightBg: 'bg-purple-50',
@@ -274,65 +266,43 @@ const Dashboard: React.FC = () => {
       link: '/touchpoints'
     },
     {
-      title: 'Upcoming Ride-Alongs',
-      value: stats.upcomingRideAlongs,
-      icon: Plane,
-      lightBg: 'bg-indigo-50',
-      iconColor: 'text-indigo-600',
-      link: '/ride-alongs'
+      title: 'Pending Follow-ups',
+      value: stats.pendingFollowUps,
+      icon: AlertCircle,
+      lightBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      link: '/touchpoints'
     },
-    {
-      title: 'Pending PR Requests',
-      value: stats.pendingPRRequests,
-      icon: Megaphone,
-      lightBg: 'bg-orange-50',
-      iconColor: 'text-orange-600',
-      link: '/pr-requests'
-    },
-    {
-      title: 'Active Donors',
-      value: stats.activeDonors,
-      icon: Heart,
-      lightBg: 'bg-rose-50',
-      iconColor: 'text-rose-600',
-      link: '/donors'
-    }
   ];
 
   const firstName = effectiveProfile?.first_name || '';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold">Welcome back{firstName ? `, ${firstName}` : ''}!</h1>
-            <p className="mt-2 text-blue-100">
-              Here's what's happening with your Life Link III CRM today.
-            </p>
-          </div>
-        </div>
+      <div className="bg-blue-600 rounded-xl px-6 py-6 sm:px-8 sm:py-7 text-white shadow-sm">
+        <h1 className="text-2xl sm:text-3xl font-bold">Welcome back{firstName ? `, ${firstName}` : ''}!</h1>
+        <p className="mt-1 text-blue-100 text-sm sm:text-base">
+          Here's what's happening with your Life Link III CRM today.
+        </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statCards.map((stat) => (
           <Link
             key={stat.title}
             to={stat.link}
             className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-200 transition-shadow"
           >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.lightBg}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div className={`p-2.5 rounded-lg ${stat.lightBg}`}>
+                  <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
                 </div>
+                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-              </div>
+              <p className="text-sm font-medium text-gray-500 mt-3">{stat.title}</p>
             </div>
           </Link>
         ))}
@@ -364,9 +334,9 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activities */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -479,54 +449,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
-          <AlertCircle className="w-5 h-5 text-gray-400" />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link
-            to="/contacts/new"
-            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors"
-          >
-            <div className="p-3 bg-blue-100 rounded-lg mb-3">
-              <Plus className="w-6 h-6 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Add Contact</span>
-          </Link>
-
-          <Link
-            to="/touchpoints/new"
-            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors"
-          >
-            <div className="p-3 bg-purple-100 rounded-lg mb-3">
-              <Phone className="w-6 h-6 text-purple-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Log Touchpoint</span>
-          </Link>
-
-          <Link
-            to="/ride-alongs/new"
-            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-          >
-            <div className="p-3 bg-indigo-100 rounded-lg mb-3">
-              <Plane className="w-6 h-6 text-indigo-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Schedule Ride-Along</span>
-          </Link>
-
-          <Link
-            to="/pr-requests/new"
-            className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-orange-300 hover:bg-orange-50 transition-colors"
-          >
-            <div className="p-3 bg-orange-100 rounded-lg mb-3">
-              <Megaphone className="w-6 h-6 text-orange-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">New PR Request</span>
-          </Link>
-        </div>
-      </div>
     </div>
   );
 };

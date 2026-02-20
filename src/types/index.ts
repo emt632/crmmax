@@ -20,6 +20,7 @@ export interface UserProfile {
   full_name: string | null;
   is_active: boolean;
   reports_to: string | null;
+  last_login: string | null;
   created_at: string;
   updated_at: string;
 }

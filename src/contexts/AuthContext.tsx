@@ -109,18 +109,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id).then(() => setLoading(false));
+        // Track last login on session hydrate
+        supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
       } else {
         setLoading(false);
       }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         setLoading(true);
         fetchProfile(session.user.id).then(() => setLoading(false));
+        // Track last login on sign-in
+        if (event === 'SIGNED_IN') {
+          supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
+        }
       } else {
         setProfile(null);
         setSubordinateIds([]);
