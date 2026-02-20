@@ -6,12 +6,7 @@ import {
   Plus,
   Trash2,
   User,
-  Mail,
-  Phone,
-  MapPin,
   Building2,
-  DollarSign,
-  Tag,
   Download,
   Sparkles,
   Camera,
@@ -453,7 +448,7 @@ const ContactForm: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-600 rounded-xl p-4 sm:p-5 text-white shadow-sm gap-3">
           <div>
@@ -527,18 +522,11 @@ const ContactForm: React.FC = () => {
           </div>
         )}
 
-        {/* Basic Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-3">
-            <div className="p-1.5 bg-blue-50 rounded-lg mr-2">
-              <User className="w-4 h-4 text-blue-600" />
-            </div>
-            <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
-          </div>
-
-          {/* Photo Upload */}
-          <div className="flex justify-center mb-3">
-            <div className="relative group">
+        {/* Basic Info + Contact Types */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          {/* Photo + Name row */}
+          <div className="flex items-start gap-3 mb-3">
+            <div className="relative group flex-shrink-0">
               <input
                 ref={photoInputRef}
                 type="file"
@@ -554,258 +542,208 @@ const ContactForm: React.FC = () => {
                 <img
                   src={photoPreview}
                   alt="Contact photo"
-                  className="h-16 w-16 rounded-xl object-cover shadow cursor-pointer"
+                  className="h-14 w-14 rounded-lg object-cover shadow cursor-pointer"
                   onClick={() => photoInputRef.current?.click()}
                 />
               ) : (
                 <div
-                  className="h-16 w-16 rounded-xl bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-sm"
+                  className="h-14 w-14 rounded-lg bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
                   onClick={() => photoInputRef.current?.click()}
                 >
-                  <Camera className="w-6 h-6 text-blue-400" />
+                  <Camera className="w-5 h-5 text-blue-400" />
                 </div>
               )}
               <div
-                className="absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 onClick={() => photoInputRef.current?.click()}
               >
-                <Camera className="w-5 h-5 text-white" />
+                <Camera className="w-4 h-4 text-white" />
               </div>
               {photoPreview && (
                 <button
                   type="button"
                   onClick={handleRemovePhoto}
-                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-colors"
+                  className="absolute -top-1.5 -right-1.5 p-0.5 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>
               )}
             </div>
-          </div>
-          <p className="text-center text-xs text-gray-500 -mt-1 mb-3">Click to upload photo</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.first_name}
-                onChange={(e) => handleInputChange('first_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.last_name}
-                onChange={(e) => handleInputChange('last_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                value={formData.title || ''}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Contact Types */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center">
-              <div className="p-1.5 bg-indigo-50 rounded-lg mr-2">
-                <Tag className="w-4 h-4 text-indigo-600" />
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">First Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.first_name}
+                  onChange={(e) => handleInputChange('first_name', e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                />
               </div>
-              <h2 className="text-base font-semibold text-gray-800">Contact Types</h2>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">Last Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.last_name}
+                  onChange={(e) => handleInputChange('last_name', e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">Title</label>
+                <input
+                  type="text"
+                  value={formData.title || ''}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                />
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddTypeModal(true)}
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add New Type
-            </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {contactTypes.map(ct => (
-              <label
-                key={ct.id}
-                className={`flex items-center p-2 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                  selectedTypeIds.includes(ct.id)
-                    ? 'border-current shadow-md'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                style={selectedTypeIds.includes(ct.id) ? { borderColor: ct.color, backgroundColor: ct.color + '10' } : undefined}
+
+          {/* Contact Types */}
+          <div className="border-t border-gray-100 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact Types</span>
+              <button
+                type="button"
+                onClick={() => setShowAddTypeModal(true)}
+                className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
               >
-                <input
-                  type="checkbox"
-                  checked={selectedTypeIds.includes(ct.id)}
-                  onChange={() => toggleType(ct.id)}
-                  className="sr-only"
-                />
-                <div
-                  className="w-4 h-4 rounded-full mr-3 flex-shrink-0"
-                  style={{ backgroundColor: ct.color }}
-                />
-                <span className="text-sm font-medium text-gray-700">{ct.name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-3">
-            <div className="p-1.5 bg-purple-50 rounded-lg mr-2">
-              <Phone className="w-4 h-4 text-purple-600" />
+                <Plus className="w-3 h-3 mr-0.5" />
+                Add Type
+              </button>
             </div>
-            <h2 className="text-base font-semibold text-gray-800">Contact Information</h2>
-          </div>
-
-          {/* Emails */}
-          <div className="space-y-3 mb-4">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center">
-              <Mail className="w-4 h-4 mr-1" />
-              Email Addresses
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Work Email</label>
-                <input
-                  type="email"
-                  value={formData.email_work || ''}
-                  onChange={(e) => handleInputChange('email_work', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Personal Email</label>
-                <input
-                  type="email"
-                  value={formData.email_personal || ''}
-                  onChange={(e) => handleInputChange('email_personal', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Phones */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center">
-              <Phone className="w-4 h-4 mr-1" />
-              Phone Numbers
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Mobile</label>
-                <input
-                  type="tel"
-                  value={formData.phone_mobile || ''}
-                  onChange={(e) => handleInputChange('phone_mobile', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Office</label>
-                <input
-                  type="tel"
-                  value={formData.phone_office || ''}
-                  onChange={(e) => handleInputChange('phone_office', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Home</label>
-                <input
-                  type="tel"
-                  value={formData.phone_home || ''}
-                  onChange={(e) => handleInputChange('phone_home', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Address */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-3">
-            <div className="p-1.5 bg-green-50 rounded-lg mr-2">
-              <MapPin className="w-4 h-4 text-green-600" />
-            </div>
-            <h2 className="text-base font-semibold text-gray-800">Address</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address Line 1
-              </label>
-              <input
-                type="text"
-                value={formData.address_line1 || ''}
-                onChange={(e) => handleInputChange('address_line1', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address Line 2
-              </label>
-              <input
-                type="text"
-                value={formData.address_line2 || ''}
-                onChange={(e) => handleInputChange('address_line2', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
+            <div className="flex flex-wrap gap-1.5">
+              {contactTypes.map(ct => (
+                <label
+                  key={ct.id}
+                  className={`inline-flex items-center px-2.5 py-1 rounded-full border cursor-pointer transition-all text-xs font-medium ${
+                    selectedTypeIds.includes(ct.id)
+                      ? 'shadow-sm'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                  style={selectedTypeIds.includes(ct.id) ? { borderColor: ct.color, backgroundColor: ct.color + '15', color: ct.color } : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTypeIds.includes(ct.id)}
+                    onChange={() => toggleType(ct.id)}
+                    className="sr-only"
+                  />
+                  <div
+                    className="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0"
+                    style={{ backgroundColor: ct.color }}
+                  />
+                  {ct.name}
                 </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Info + Address */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-0.5">Work Email</label>
+              <input
+                type="email"
+                value={formData.email_work || ''}
+                onChange={(e) => handleInputChange('email_work', e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-0.5">Personal Email</label>
+              <input
+                type="email"
+                value={formData.email_personal || ''}
+                onChange={(e) => handleInputChange('email_personal', e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-0.5">Mobile</label>
+              <input
+                type="tel"
+                value={formData.phone_mobile || ''}
+                onChange={(e) => handleInputChange('phone_mobile', e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-0.5">Office</label>
+              <input
+                type="tel"
+                value={formData.phone_office || ''}
+                onChange={(e) => handleInputChange('phone_office', e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-0.5">Home</label>
+              <input
+                type="tel"
+                value={formData.phone_home || ''}
+                onChange={(e) => handleInputChange('phone_home', e.target.value)}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="border-t border-gray-100 pt-3">
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Address</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">Address Line 1</label>
+                <input
+                  type="text"
+                  value={formData.address_line1 || ''}
+                  onChange={(e) => handleInputChange('address_line1', e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">Address Line 2</label>
+                <input
+                  type="text"
+                  value={formData.address_line2 || ''}
+                  onChange={(e) => handleInputChange('address_line2', e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">City</label>
                 <input
                   type="text"
                   value={formData.city || ''}
                   onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State
-                </label>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">State</label>
                 <input
                   type="text"
                   value={formData.state || ''}
                   onChange={(e) => handleInputChange('state', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ZIP Code
-                </label>
+                <label className="block text-xs font-medium text-gray-600 mb-0.5">ZIP</label>
                 <input
                   type="text"
                   value={formData.zip || ''}
                   onChange={(e) => handleInputChange('zip', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
+                  className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
             </div>
@@ -814,49 +752,40 @@ const ContactForm: React.FC = () => {
 
         {/* Organization Affiliations - Only show if editing */}
         {isEditing && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <Building2 className="w-5 h-5 mr-2 text-gray-500" />
-                <h2 className="text-lg font-medium">Organization Affiliations</h2>
+                <Building2 className="w-4 h-4 mr-1.5 text-gray-500" />
+                <span className="text-sm font-semibold text-gray-800">Organization Affiliations</span>
               </div>
             </div>
 
-            {/* Existing affiliations */}
             {contactOrganizations.length > 0 && (
-              <div className="space-y-3 mb-4">
+              <div className="space-y-2 mb-3">
                 {contactOrganizations.map((aff) => (
-                  <div key={aff.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={aff.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{getOrganizationName(aff.organization_id)}</p>
-                      {aff.role && <p className="text-sm text-gray-600">{aff.role}</p>}
-                      {aff.department && <p className="text-sm text-gray-500">{aff.department}</p>}
+                      <span className="font-medium text-gray-900">{getOrganizationName(aff.organization_id)}</span>
+                      {aff.role && <span className="text-gray-500 ml-2">{aff.role}</span>}
+                      {aff.department && <span className="text-gray-400 ml-2">{aff.department}</span>}
                       {aff.is_primary && (
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
-                          Primary
-                        </span>
+                        <span className="ml-2 px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">Primary</span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeAffiliation(aff.id)}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                    <button type="button" onClick={() => removeAffiliation(aff.id)} className="p-1 hover:bg-gray-200 rounded">
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Add new affiliation */}
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Add Affiliation</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="border-t border-gray-100 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
                 <select
                   value={newAffiliation.organization_id}
                   onChange={(e) => setNewAffiliation({...newAffiliation, organization_id: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Organization</option>
                   {organizations.map(org => (
@@ -868,83 +797,67 @@ const ContactForm: React.FC = () => {
                   placeholder="Role/Title"
                   value={newAffiliation.role}
                   onChange={(e) => setNewAffiliation({...newAffiliation, role: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                   type="text"
                   placeholder="Department"
                   value={newAffiliation.department}
                   onChange={(e) => setNewAffiliation({...newAffiliation, department: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
                 />
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isPrimary"
-                    checked={newAffiliation.is_primary}
-                    onChange={(e) => setNewAffiliation({...newAffiliation, is_primary: e.target.checked})}
-                    className="mr-2"
-                  />
-                  <label htmlFor="isPrimary" className="text-sm text-gray-700">Primary Organization</label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={newAffiliation.is_primary}
+                      onChange={(e) => setNewAffiliation({...newAffiliation, is_primary: e.target.checked})}
+                      className="mr-1"
+                    />
+                    Primary
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addAffiliation}
+                    className="inline-flex items-center px-2.5 py-1.5 border border-blue-600 text-xs font-medium rounded-md text-blue-600 hover:bg-blue-50"
+                  >
+                    <Plus className="w-3 h-3 mr-0.5" />
+                    Add
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={addAffiliation}
-                className="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Affiliation
-              </button>
             </div>
           </div>
         )}
 
-        {/* Donor Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-3">
-            <div className="p-1.5 bg-yellow-50 rounded-lg mr-2">
-              <DollarSign className="w-4 h-4 text-yellow-600" />
-            </div>
-            <h2 className="text-base font-semibold text-gray-800">Donor Information</h2>
-          </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isDonor"
-              checked={formData.is_donor || false}
-              onChange={(e) => handleInputChange('is_donor', e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="isDonor" className="text-sm text-gray-700">
-              This contact is a donor
+        {/* Donor + Notes */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mb-3">
+            <label className="flex items-center text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={formData.is_donor || false}
+                onChange={(e) => handleInputChange('is_donor', e.target.checked)}
+                className="mr-2"
+              />
+              Donor
+            </label>
+            <label className="flex items-center text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={formData.is_vip || false}
+                onChange={(e) => handleInputChange('is_vip', e.target.checked)}
+                className="mr-2"
+              />
+              VIP
             </label>
           </div>
-          <div className="flex items-center mt-3">
-            <input
-              type="checkbox"
-              id="isVip"
-              checked={formData.is_vip || false}
-              onChange={(e) => handleInputChange('is_vip', e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="isVip" className="text-sm text-gray-700">
-              This contact is a VIP
-            </label>
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <label className="block text-base font-semibold text-gray-800 mb-2">
-            Notes
-          </label>
           <textarea
-            rows={3}
+            rows={2}
             value={formData.notes || ''}
             onChange={(e) => handleInputChange('notes', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Add any additional notes about this contact..."
+            className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm"
+            placeholder="Notes..."
           />
         </div>
 
