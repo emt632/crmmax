@@ -13,6 +13,7 @@ import HomePage from './pages/HomePage';
 import Settings from './pages/Settings';
 import Reports from './pages/Reports';
 import ContactImport from './pages/ContactImport';
+import ShareTarget from './pages/ShareTarget';
 import Login from './pages/Login';
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
               <Route path="campaigns" element={<ComingSoon module="Campaigns" />} />
               <Route path="grants" element={<ComingSoon module="Grants" />} />
               <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
+              <Route path="share-target" element={<ShareTarget />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
             </Route>

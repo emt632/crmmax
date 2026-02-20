@@ -18,3 +18,8 @@ if (rootElement) {
 } else {
   console.error('Root element not found!');
 }
+
+// Register service worker for PWA share target
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
