@@ -411,7 +411,7 @@ const ContactsList: React.FC = () => {
             <p className="mt-2 text-blue-100">
               Manage your contacts and relationships
             </p>
-            <div className="mt-4 flex items-center space-x-6">
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
               <div>
                 <p className="text-sm text-blue-200">Total Contacts</p>
                 <p className="text-2xl font-bold">{contacts.length}</p>
@@ -429,24 +429,24 @@ const ContactsList: React.FC = () => {
           <div className="mt-6 lg:mt-0 flex flex-wrap gap-3">
             <button
               onClick={exportContacts}
-              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export CSV</span>
             </button>
             <button
               onClick={exportVCards}
-              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export vCards
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export vCards</span>
             </button>
             <Link
               to="/contacts/import"
-              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Import
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Import</span>
             </Link>
             <Link
               to="/contacts/new"
@@ -485,11 +485,11 @@ const ContactsList: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <select
                 value={selectedOrganization}
                 onChange={(e) => setSelectedOrganization(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Organizations</option>
                 {organizations.map(org => (
@@ -501,7 +501,7 @@ const ContactsList: React.FC = () => {
                 <select
                   value={selectedTypeFilter}
                   onChange={(e) => setSelectedTypeFilter(e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Types</option>
                   {contactTypes.map(ct => (
@@ -687,6 +687,11 @@ const ContactsList: React.FC = () => {
                           <p className="text-sm text-gray-600 truncate mt-0.5">
                             {contact.title}
                           </p>
+                          {orgInfo && (
+                            <p className="text-sm text-gray-500 truncate mt-0.5 lg:hidden">
+                              {orgInfo.organization?.name}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-8">

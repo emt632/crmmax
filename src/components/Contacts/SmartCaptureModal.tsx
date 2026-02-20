@@ -309,7 +309,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative bg-white shadow-2xl w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-lg sm:mx-4 overflow-hidden sm:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2">

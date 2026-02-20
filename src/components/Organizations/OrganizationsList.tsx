@@ -261,7 +261,7 @@ const OrganizationsList: React.FC = () => {
             <p className="mt-2 text-emerald-100">
               Manage your organization partners and relationships
             </p>
-            <div className="mt-4 flex items-center space-x-6">
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
               <div>
                 <p className="text-sm text-emerald-200">Total Organizations</p>
                 <p className="text-2xl font-bold">{organizations.length}</p>
@@ -279,10 +279,10 @@ const OrganizationsList: React.FC = () => {
           <div className="mt-6 lg:mt-0 flex flex-wrap gap-3">
             <button
               onClick={exportOrganizations}
-              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export</span>
             </button>
             <Link
               to="/organizations/new"
@@ -320,11 +320,11 @@ const OrganizationsList: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <select
                 value={selectedTypeFilter}
                 onChange={(e) => setSelectedTypeFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="all">All Types</option>
                 {contactTypes.map(ct => (

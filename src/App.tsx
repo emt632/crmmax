@@ -9,7 +9,7 @@ import OrganizationsList from './components/Organizations/OrganizationsList';
 import OrganizationForm from './components/Organizations/OrganizationForm';
 import TouchpointsList from './components/Touchpoints/TouchpointsList';
 import TouchpointForm from './components/Touchpoints/TouchpointForm';
-import Dashboard from './pages/Dashboard';
+import HomePage from './pages/HomePage';
 import Settings from './pages/Settings';
 import Reports from './pages/Reports';
 import ContactImport from './pages/ContactImport';
@@ -23,7 +23,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<HomePage />} />
               <Route path="contacts" element={<ContactsList />} />
               <Route path="contacts/new" element={<ContactForm />} />
               <Route path="contacts/import" element={<ContactImport />} />
