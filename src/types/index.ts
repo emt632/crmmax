@@ -410,4 +410,5 @@ export interface SmartCaptureResult {
   contactData: Partial<Contact>;
   organizationId?: string;
   organizationRole?: string;
+  savedContactId?: string;
 }

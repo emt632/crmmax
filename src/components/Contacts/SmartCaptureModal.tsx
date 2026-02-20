@@ -254,12 +254,13 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
   };
 
   const handleConfirm = async () => {
+    setSaving(true);
     let organizationId: string | undefined;
+    let savedContactId: string | undefined;
 
-    if (createOrg && parsedOrg.name.trim()) {
-      setSaving(true);
-      try {
-        // Check for existing org by name
+    try {
+      // 1. Create or match organization
+      if (createOrg && parsedOrg.name.trim()) {
         const existingOrg = existingOrganizations.find(
           o => o.name.toLowerCase() === parsedOrg.name.trim().toLowerCase()
         );
@@ -285,18 +286,53 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
           if (insertError) throw insertError;
           organizationId = data.id;
         }
-      } catch (err: any) {
-        setError(`Failed to create organization: ${err.message}`);
-        setSaving(false);
-        return;
       }
+
+      // 2. Create the contact
+      if (createContact && (parsedContact.first_name || parsedContact.last_name)) {
+        const now = new Date().toISOString();
+        const { data: contactData, error: contactError } = await supabase
+          .from('contacts')
+          .insert([{
+            ...parsedContact,
+            created_by: userId,
+            created_at: now,
+            updated_at: now,
+          }])
+          .select()
+          .single();
+
+        if (contactError) throw contactError;
+        savedContactId = contactData.id;
+
+        // 3. Link contact to organization
+        if (savedContactId && organizationId) {
+          await supabase
+            .from('contact_organizations')
+            .insert([{
+              contact_id: savedContactId,
+              organization_id: organizationId,
+              role: parsedContact.title || null,
+              is_primary: true,
+              created_by: userId,
+              created_at: now,
+              updated_at: now,
+            }]);
+        }
+      }
+    } catch (err: any) {
+      setError(`Failed to save: ${err.message}`);
       setSaving(false);
+      return;
     }
+
+    setSaving(false);
 
     const result: SmartCaptureResult = {
       contactData: createContact ? parsedContact : {},
       organizationId,
       organizationRole: parsedContact.title,
+      savedContactId,
     };
 
     onResult(result);

@@ -429,7 +429,13 @@ const ContactForm: React.FC = () => {
   };
 
   const handleSmartCaptureResult = (result: SmartCaptureResult) => {
-    // Merge contact data — only fill empty fields
+    // If contact was saved directly by Smart Capture, navigate to it
+    if (result.savedContactId) {
+      navigate(`/contacts/${result.savedContactId}`);
+      return;
+    }
+
+    // Fallback: merge contact data into form (only fill empty fields)
     setFormData(prev => {
       const updated = { ...prev };
       for (const [key, value] of Object.entries(result.contactData)) {
@@ -448,7 +454,6 @@ const ContactForm: React.FC = () => {
         organizationName: org?.name || 'Organization',
         role: result.organizationRole
       });
-      // Refresh organizations list in case a new one was created
       fetchOrganizations();
     }
   };
