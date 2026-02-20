@@ -453,15 +453,15 @@ const ContactForm: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-600 rounded-xl p-6 sm:p-8 text-white shadow-sm gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-600 rounded-xl p-4 sm:p-5 text-white shadow-sm gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
-              <User className="w-7 h-7 sm:w-8 sm:h-8 mr-3" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center">
+              <User className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
               {isEditing ? 'Edit Contact' : 'New Contact'}
             </h1>
-            <p className="mt-2 text-blue-100 text-sm sm:text-base">
+            <p className="mt-1 text-blue-100 text-sm">
               {isEditing ? 'Update contact information' : 'Add a new contact to your CRM'}
             </p>
           </div>
@@ -528,16 +528,16 @@ const ContactForm: React.FC = () => {
         )}
 
         {/* Basic Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-blue-50 rounded-lg mr-3">
-              <User className="w-5 h-5 text-blue-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center mb-3">
+            <div className="p-1.5 bg-blue-50 rounded-lg mr-2">
+              <User className="w-4 h-4 text-blue-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
+            <h2 className="text-base font-semibold text-gray-800">Basic Information</h2>
           </div>
 
           {/* Photo Upload */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-3">
             <div className="relative group">
               <input
                 ref={photoInputRef}
@@ -554,22 +554,22 @@ const ContactForm: React.FC = () => {
                 <img
                   src={photoPreview}
                   alt="Contact photo"
-                  className="h-24 w-24 rounded-2xl object-cover shadow-lg cursor-pointer"
+                  className="h-16 w-16 rounded-xl object-cover shadow cursor-pointer"
                   onClick={() => photoInputRef.current?.click()}
                 />
               ) : (
                 <div
-                  className="h-24 w-24 rounded-xl bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-sm"
+                  className="h-16 w-16 rounded-xl bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-sm"
                   onClick={() => photoInputRef.current?.click()}
                 >
-                  <Camera className="w-8 h-8 text-blue-400" />
+                  <Camera className="w-6 h-6 text-blue-400" />
                 </div>
               )}
               <div
-                className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 onClick={() => photoInputRef.current?.click()}
               >
-                <Camera className="w-6 h-6 text-white" />
+                <Camera className="w-5 h-5 text-white" />
               </div>
               {photoPreview && (
                 <button
@@ -582,7 +582,7 @@ const ContactForm: React.FC = () => {
               )}
             </div>
           </div>
-          <p className="text-center text-xs text-gray-500 -mt-4 mb-4">Click to upload photo</p>
+          <p className="text-center text-xs text-gray-500 -mt-1 mb-3">Click to upload photo</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -594,7 +594,7 @@ const ContactForm: React.FC = () => {
                 required
                 value={formData.first_name}
                 onChange={(e) => handleInputChange('first_name', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
             <div>
@@ -606,7 +606,7 @@ const ContactForm: React.FC = () => {
                 required
                 value={formData.last_name}
                 onChange={(e) => handleInputChange('last_name', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
             <div className="md:col-span-2">
@@ -617,20 +617,20 @@ const ContactForm: React.FC = () => {
                 type="text"
                 value={formData.title || ''}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
           </div>
         </div>
 
         {/* Contact Types */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center">
-              <div className="p-2 bg-indigo-50 rounded-lg mr-3">
-                <Tag className="w-5 h-5 text-indigo-600" />
+              <div className="p-1.5 bg-indigo-50 rounded-lg mr-2">
+                <Tag className="w-4 h-4 text-indigo-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">Contact Types</h2>
+              <h2 className="text-base font-semibold text-gray-800">Contact Types</h2>
             </div>
             <button
               type="button"
@@ -641,11 +641,11 @@ const ContactForm: React.FC = () => {
               Add New Type
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {contactTypes.map(ct => (
               <label
                 key={ct.id}
-                className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                className={`flex items-center p-2 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                   selectedTypeIds.includes(ct.id)
                     ? 'border-current shadow-md'
                     : 'border-gray-200 hover:border-gray-300'
@@ -669,16 +669,16 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Contact Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-purple-50 rounded-lg mr-3">
-              <Phone className="w-5 h-5 text-purple-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center mb-3">
+            <div className="p-1.5 bg-purple-50 rounded-lg mr-2">
+              <Phone className="w-4 h-4 text-purple-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Contact Information</h2>
+            <h2 className="text-base font-semibold text-gray-800">Contact Information</h2>
           </div>
-          
+
           {/* Emails */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-4">
             <h3 className="text-sm font-medium text-gray-700 flex items-center">
               <Mail className="w-4 h-4 mr-1" />
               Email Addresses
@@ -690,7 +690,7 @@ const ContactForm: React.FC = () => {
                   type="email"
                   value={formData.email_work || ''}
                   onChange={(e) => handleInputChange('email_work', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
@@ -699,7 +699,7 @@ const ContactForm: React.FC = () => {
                   type="email"
                   value={formData.email_personal || ''}
                   onChange={(e) => handleInputChange('email_personal', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
             </div>
@@ -718,7 +718,7 @@ const ContactForm: React.FC = () => {
                   type="tel"
                   value={formData.phone_mobile || ''}
                   onChange={(e) => handleInputChange('phone_mobile', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
@@ -727,7 +727,7 @@ const ContactForm: React.FC = () => {
                   type="tel"
                   value={formData.phone_office || ''}
                   onChange={(e) => handleInputChange('phone_office', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
@@ -736,7 +736,7 @@ const ContactForm: React.FC = () => {
                   type="tel"
                   value={formData.phone_home || ''}
                   onChange={(e) => handleInputChange('phone_home', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
             </div>
@@ -744,12 +744,12 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Address */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-green-50 rounded-lg mr-3">
-              <MapPin className="w-5 h-5 text-green-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center mb-3">
+            <div className="p-1.5 bg-green-50 rounded-lg mr-2">
+              <MapPin className="w-4 h-4 text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Address</h2>
+            <h2 className="text-base font-semibold text-gray-800">Address</h2>
           </div>
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -760,7 +760,7 @@ const ContactForm: React.FC = () => {
                 type="text"
                 value={formData.address_line1 || ''}
                 onChange={(e) => handleInputChange('address_line1', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
             <div>
@@ -771,7 +771,7 @@ const ContactForm: React.FC = () => {
                 type="text"
                 value={formData.address_line2 || ''}
                 onChange={(e) => handleInputChange('address_line2', e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -783,7 +783,7 @@ const ContactForm: React.FC = () => {
                   type="text"
                   value={formData.city || ''}
                   onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
@@ -794,7 +794,7 @@ const ContactForm: React.FC = () => {
                   type="text"
                   value={formData.state || ''}
                   onChange={(e) => handleInputChange('state', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
               <div>
@@ -805,7 +805,7 @@ const ContactForm: React.FC = () => {
                   type="text"
                   value={formData.zip || ''}
                   onChange={(e) => handleInputChange('zip', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 hover:border-gray-300"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
                 />
               </div>
             </div>
@@ -901,12 +901,12 @@ const ContactForm: React.FC = () => {
         )}
 
         {/* Donor Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-yellow-50 rounded-lg mr-3">
-              <DollarSign className="w-5 h-5 text-yellow-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center mb-3">
+            <div className="p-1.5 bg-yellow-50 rounded-lg mr-2">
+              <DollarSign className="w-4 h-4 text-yellow-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Donor Information</h2>
+            <h2 className="text-base font-semibold text-gray-800">Donor Information</h2>
           </div>
           <div className="flex items-center">
             <input
@@ -935,12 +935,12 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Notes */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <label className="block text-xl font-semibold text-gray-800 mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <label className="block text-base font-semibold text-gray-800 mb-2">
             Notes
           </label>
           <textarea
-            rows={4}
+            rows={3}
             value={formData.notes || ''}
             onChange={(e) => handleInputChange('notes', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -956,18 +956,18 @@ const ContactForm: React.FC = () => {
         )}
 
         {/* Form Actions */}
-        <div className="flex justify-end space-x-4 pt-6">
+        <div className="flex justify-end space-x-3 pt-4">
           <button
             type="button"
             onClick={() => navigate('/contacts')}
-            className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="px-6 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
           >
             {saving ? (
               <>
