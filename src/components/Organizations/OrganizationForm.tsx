@@ -170,13 +170,13 @@ const OrganizationForm: React.FC = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-gradient-to-br from-blue-500 to-blue-600',
-      'bg-gradient-to-br from-purple-500 to-purple-600',
-      'bg-gradient-to-br from-green-500 to-green-600',
-      'bg-gradient-to-br from-yellow-500 to-yellow-600',
-      'bg-gradient-to-br from-red-500 to-red-600',
-      'bg-gradient-to-br from-indigo-500 to-indigo-600',
-      'bg-gradient-to-br from-pink-500 to-pink-600'
+      'bg-blue-600',
+      'bg-violet-600',
+      'bg-emerald-600',
+      'bg-amber-600',
+      'bg-rose-600',
+      'bg-indigo-600',
+      'bg-cyan-600'
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
@@ -310,7 +310,7 @@ const OrganizationForm: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-emerald-600 rounded-xl p-6 sm:p-8 text-white shadow-sm gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
               <Building2 className="w-7 h-7 sm:w-8 sm:h-8 mr-3" />
@@ -324,7 +324,7 @@ const OrganizationForm: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowCMSLookup(true)}
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Search className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Search CMS Hospitals</span>
@@ -332,7 +332,7 @@ const OrganizationForm: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/organizations')}
-              className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
+              className="p-3 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -372,9 +372,9 @@ const OrganizationForm: React.FC = () => {
         )}
 
         {/* Basic Information */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl mr-3">
+            <div className="p-2 bg-emerald-50 rounded-lg mr-3">
               <Building2 className="w-5 h-5 text-emerald-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
@@ -418,10 +418,10 @@ const OrganizationForm: React.FC = () => {
         </div>
 
         {/* Contact Types */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl mr-3">
+              <div className="p-2 bg-indigo-50 rounded-lg mr-3">
                 <Tag className="w-5 h-5 text-indigo-600" />
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Contact Types</h2>
@@ -463,9 +463,9 @@ const OrganizationForm: React.FC = () => {
         </div>
 
         {/* Contact Information */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl mr-3">
+            <div className="p-2 bg-purple-50 rounded-lg mr-3">
               <Phone className="w-5 h-5 text-purple-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Contact Information</h2>
@@ -493,9 +493,9 @@ const OrganizationForm: React.FC = () => {
         </div>
 
         {/* Address */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl mr-3">
+            <div className="p-2 bg-green-50 rounded-lg mr-3">
               <MapPin className="w-5 h-5 text-green-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Address</h2>
@@ -552,9 +552,9 @@ const OrganizationForm: React.FC = () => {
         </div>
 
         {/* Donor Status */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl mr-3">
+            <div className="p-2 bg-yellow-50 rounded-lg mr-3">
               <DollarSign className="w-5 h-5 text-yellow-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Donor Information</h2>
@@ -574,7 +574,7 @@ const OrganizationForm: React.FC = () => {
         </div>
 
         {/* Notes */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <label className="block text-xl font-semibold text-gray-800 mb-4">Notes</label>
           <textarea
             rows={4}
@@ -587,9 +587,9 @@ const OrganizationForm: React.FC = () => {
 
         {/* Affiliated Contacts - Only show if editing */}
         {isEditing && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl mr-3">
+              <div className="p-2 bg-blue-50 rounded-lg mr-3">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
               <h2 className="text-xl font-semibold text-gray-800">
@@ -620,10 +620,10 @@ const OrganizationForm: React.FC = () => {
                   <Link
                     key={contact.id}
                     to={`/contacts/${contact.id}`}
-                    className="flex items-center justify-between py-4 px-2 -mx-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all group"
+                    className="flex items-center justify-between py-4 px-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors group"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow group-hover:scale-110 transition-transform">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow-sm">
                         {contact.photo_url ? (
                           <img
                             src={contact.photo_url}
@@ -668,7 +668,7 @@ const OrganizationForm: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -682,14 +682,14 @@ const OrganizationForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/organizations')}
-            className="px-8 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:shadow-lg transition-all duration-200"
+            className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-medium hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-200"
+            className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
           >
             {saving ? (
               <>

@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
     <>
       <div className="flex items-center justify-between p-6 border-b border-gray-100">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 animate-pulse-slow">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-sm">LL3</span>
           </div>
           <div>
@@ -97,12 +97,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
           className={({ isActive }) =>
             `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
               isActive
-                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 shadow-md border border-blue-100'
-                : 'text-gray-700 hover:bg-gray-50 hover:shadow-sm border border-transparent'
+                ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                : 'text-gray-700 hover:bg-gray-50 border border-transparent'
             }`
           }
         >
-          <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <Home className="w-5 h-5" />
           <span className="font-medium">Dashboard</span>
         </NavLink>
 
@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
                 {expandedModules.includes(module.module) ? (
                   <ChevronDown className="w-4 h-4 text-gray-400 transition-transform" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-400 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
                 )}
               </button>
               
@@ -134,12 +134,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
                       className={({ isActive }) =>
                         `flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
                           isActive
-                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-medium shadow-sm border border-blue-100'
+                            ? 'bg-blue-50 text-blue-600 font-medium border border-blue-100'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`
                       }
                     >
-                      <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                      <item.icon className="w-4 h-4" />
                       <span className="text-sm font-medium">{item.label}</span>
                     </NavLink>
                   ))}
@@ -150,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
         </div>
       </nav>
 
-      <div className="p-6 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+      <div className="p-6 border-t border-gray-100 bg-gray-50">
         {(userName || userEmail) && (
           <div className="px-4 py-2 mb-2">
             {userName && <p className="text-sm font-medium text-gray-700 truncate">{userName}</p>}
@@ -161,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
           to="/settings"
           className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 group"
         >
-          <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+          <Settings className="w-5 h-5" />
           <span className="font-medium">Settings</span>
         </NavLink>
         {onSignOut && (
@@ -169,7 +169,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
             onClick={onSignOut}
             className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 mt-2 group"
           >
-            <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <LogOut className="w-5 h-5" />
             <span className="font-medium">Sign Out</span>
           </button>
         )}
@@ -182,7 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
       {/* Mobile menu button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/20"
+        className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white rounded-xl shadow-md border border-gray-200 transition-colors hover:bg-gray-50"
       >
         <Menu className="w-6 h-6" />
       </button>
@@ -204,7 +204,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-72 lg:h-screen lg:bg-white/80 lg:backdrop-blur-xl lg:border-r lg:border-gray-100 lg:shadow-xl">
+      <div className="hidden lg:flex lg:flex-col lg:w-72 lg:h-screen lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm">
         <NavContent />
       </div>
     </>

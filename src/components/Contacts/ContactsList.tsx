@@ -374,13 +374,13 @@ const ContactsList: React.FC = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-gradient-to-br from-blue-500 to-blue-600',
-      'bg-gradient-to-br from-purple-500 to-purple-600',
-      'bg-gradient-to-br from-green-500 to-green-600',
-      'bg-gradient-to-br from-yellow-500 to-yellow-600',
-      'bg-gradient-to-br from-red-500 to-red-600',
-      'bg-gradient-to-br from-indigo-500 to-indigo-600',
-      'bg-gradient-to-br from-pink-500 to-pink-600'
+      'bg-blue-600',
+      'bg-violet-600',
+      'bg-emerald-600',
+      'bg-amber-600',
+      'bg-rose-600',
+      'bg-indigo-600',
+      'bg-cyan-600'
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
@@ -401,7 +401,7 @@ const ContactsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
@@ -429,21 +429,21 @@ const ContactsList: React.FC = () => {
           <div className="mt-6 lg:mt-0 flex flex-wrap gap-3">
             <button
               onClick={exportContacts}
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Download className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Export CSV</span>
             </button>
             <button
               onClick={exportVCards}
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Download className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Export vCards</span>
             </button>
             <Link
               to="/contacts/import"
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Upload className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Import</span>
@@ -460,7 +460,7 @@ const ContactsList: React.FC = () => {
       </div>
 
       {/* Enhanced Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="space-y-4">
           {/* Search and View Toggle */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -590,7 +590,7 @@ const ContactsList: React.FC = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
@@ -611,7 +611,7 @@ const ContactsList: React.FC = () => {
 
       {/* Contacts Display */}
       {filteredContacts.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
           <div className="text-center">
             <div className="mx-auto h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center">
               <User className="h-12 w-12 text-gray-400" />
@@ -634,7 +634,7 @@ const ContactsList: React.FC = () => {
           </div>
         </div>
       ) : viewMode === 'list' ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
             {filteredContacts.map((contact) => {
               const orgInfo = getContactOrganization(contact.id);
@@ -643,12 +643,12 @@ const ContactsList: React.FC = () => {
                 <Link
                   key={contact.id}
                   to={`/contacts/${contact.id}`}
-                  className="block hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all group"
+                  className="block hover:bg-gray-50 transition-colors group"
                 >
                   <div className="px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0 h-12 w-12 rounded-xl shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+                        <div className="flex-shrink-0 h-12 w-12 rounded-xl shadow-sm overflow-hidden">
                           {contact.photo_url ? (
                             <img src={contact.photo_url} alt={`${contact.first_name} ${contact.last_name}`} className="h-full w-full object-cover" />
                           ) : (
@@ -663,13 +663,13 @@ const ContactsList: React.FC = () => {
                               {contact.first_name} {contact.last_name}
                             </p>
                             {contact.is_donor && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-800 border border-green-200">
                                 <Heart className="w-3 h-3 mr-1" />
                                 Donor
                               </span>
                             )}
                             {contact.is_vip && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 border border-purple-200">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-800 border border-purple-200">
                                 <Star className="w-3 h-3 mr-1" />
                                 VIP
                               </span>
@@ -724,7 +724,7 @@ const ContactsList: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                       </div>
                     </div>
                   </div>
@@ -742,12 +742,11 @@ const ContactsList: React.FC = () => {
               <Link
                 key={contact.id}
                 to={`/contacts/${contact.id}`}
-                className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200"
+                className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-5 transition-opacity" />
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="h-16 w-16 rounded-xl shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+                    <div className="h-16 w-16 rounded-xl shadow-sm overflow-hidden">
                       {contact.photo_url ? (
                         <img src={contact.photo_url} alt={`${contact.first_name} ${contact.last_name}`} className="h-full w-full object-cover" />
                       ) : (

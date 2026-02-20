@@ -109,9 +109,9 @@ const CMSHospitalLookupModal: React.FC<CMSHospitalLookupModalProps> = ({
       <div className="flex items-stretch sm:items-start justify-center min-h-screen sm:pt-4 sm:px-4 sm:pb-20 text-center sm:p-0">
         <div className="fixed inset-0 bg-gray-500/75 transition-opacity" onClick={onClose} />
 
-        <div className="relative bg-white text-left overflow-hidden shadow-xl transform transition-all w-full h-full sm:h-auto sm:rounded-2xl sm:my-8 sm:max-w-3xl sm:inline-block">
+        <div className="relative bg-white text-left overflow-hidden shadow-lg transform transition-all w-full h-full sm:h-auto sm:rounded-xl sm:my-8 sm:max-w-3xl sm:inline-block">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+          <div className="bg-emerald-600 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center text-white">
                 <Building2 className="w-5 h-5 mr-2" />

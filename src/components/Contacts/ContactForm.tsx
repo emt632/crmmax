@@ -14,8 +14,10 @@ import {
   Tag,
   Download,
   Sparkles,
-  Camera
+  Camera,
+  Info
 } from 'lucide-react';
+import { format } from 'date-fns';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment, SmartCaptureResult } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,7 +29,7 @@ import { uploadContactPhoto, deleteContactPhoto } from '../../lib/photo-upload';
 const ContactForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isEditing = !!id;
 
   const [loading, setLoading] = useState(false);
@@ -453,7 +455,7 @@ const ContactForm: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-600 rounded-xl p-6 sm:p-8 text-white shadow-sm gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
               <User className="w-7 h-7 sm:w-8 sm:h-8 mr-3" />
@@ -467,7 +469,7 @@ const ContactForm: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowSmartCapture(true)}
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Smart Capture</span>
@@ -476,7 +478,7 @@ const ContactForm: React.FC = () => {
               <button
                 type="button"
                 onClick={handleExportVCard}
-                className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+                className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
               >
                 <Download className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Export vCard</span>
@@ -485,12 +487,20 @@ const ContactForm: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/contacts')}
-              className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
+              className="p-3 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
           </div>
         </div>
+
+        {/* Created by metadata */}
+        {isEditing && formData.created_at && (
+          <div className="flex items-center text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+            <Info className="w-4 h-4 mr-2 text-gray-400" />
+            Created by {profile?.full_name || profile?.email || 'Unknown'} on {format(new Date(formData.created_at), 'MMM d, yyyy')}
+          </div>
+        )}
 
         {/* Pending Organization Link Banner */}
         {pendingOrgLink && (
@@ -518,9 +528,9 @@ const ContactForm: React.FC = () => {
         )}
 
         {/* Basic Information */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl mr-3">
+            <div className="p-2 bg-blue-50 rounded-lg mr-3">
               <User className="w-5 h-5 text-blue-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
@@ -549,7 +559,7 @@ const ContactForm: React.FC = () => {
                 />
               ) : (
                 <div
-                  className="h-24 w-24 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer hover:from-blue-200 hover:to-indigo-200 transition-all shadow-lg"
+                  className="h-24 w-24 rounded-xl bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-sm"
                   onClick={() => photoInputRef.current?.click()}
                 >
                   <Camera className="w-8 h-8 text-blue-400" />
@@ -614,10 +624,10 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Contact Types */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl mr-3">
+              <div className="p-2 bg-indigo-50 rounded-lg mr-3">
                 <Tag className="w-5 h-5 text-indigo-600" />
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Contact Types</h2>
@@ -659,9 +669,9 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Contact Information */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl mr-3">
+            <div className="p-2 bg-purple-50 rounded-lg mr-3">
               <Phone className="w-5 h-5 text-purple-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Contact Information</h2>
@@ -734,9 +744,9 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Address */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl mr-3">
+            <div className="p-2 bg-green-50 rounded-lg mr-3">
               <MapPin className="w-5 h-5 text-green-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Address</h2>
@@ -891,9 +901,9 @@ const ContactForm: React.FC = () => {
         )}
 
         {/* Donor Status */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl mr-3">
+            <div className="p-2 bg-yellow-50 rounded-lg mr-3">
               <DollarSign className="w-5 h-5 text-yellow-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Donor Information</h2>
@@ -925,7 +935,7 @@ const ContactForm: React.FC = () => {
         </div>
 
         {/* Notes */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <label className="block text-xl font-semibold text-gray-800 mb-4">
             Notes
           </label>
@@ -950,14 +960,14 @@ const ContactForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/contacts')}
-            className="px-8 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:border-gray-300 hover:shadow-lg transition-all duration-200"
+            className="px-8 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-200"
+            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
           >
             {saving ? (
               <>

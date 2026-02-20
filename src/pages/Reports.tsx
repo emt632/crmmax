@@ -340,7 +340,7 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
@@ -393,7 +393,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <Filter className="w-5 h-5 text-gray-600 mr-2" />
@@ -522,7 +522,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Results Table */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -636,7 +636,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Export Actions */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Export</h3>
         <div className="flex flex-wrap gap-3">
           <button
@@ -660,7 +660,7 @@ const Reports: React.FC = () => {
             <button
               onClick={exportGiveButterContacts}
               disabled={filteredContacts.length === 0}
-              className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="inline-flex items-center px-4 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               Export for GiveButter (Contacts)
@@ -669,7 +669,7 @@ const Reports: React.FC = () => {
             <button
               onClick={exportGiveButterCompanies}
               disabled={filteredOrganizations.length === 0}
-              className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="inline-flex items-center px-4 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               Export for GiveButter (Companies)

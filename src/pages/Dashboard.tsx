@@ -55,6 +55,7 @@ interface UpcomingFollowUp {
   priority: string;
   category: string;
   assignedToName?: string;
+  assignedByName?: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -184,6 +185,7 @@ const Dashboard: React.FC = () => {
         .select(`
           id, subject, follow_up_date, follow_up_notes, type, created_by, assigned_to,
           assignee:assigned_to(full_name),
+          creator:created_by(full_name),
           touchpoint_contacts(contact:contact_id(first_name, last_name)),
           touchpoint_organizations(organization:organization_id(name))
         `)
@@ -234,6 +236,9 @@ const Dashboard: React.FC = () => {
           priority,
           category: TOUCHPOINT_TYPE_LABELS[tp.type] || tp.type,
           assignedToName: tp.assignee?.full_name || undefined,
+          assignedByName: tp.assigned_to === userId && tp.created_by !== userId
+            ? tp.creator?.full_name || undefined
+            : undefined,
         };
       });
 
@@ -458,6 +463,9 @@ const Dashboard: React.FC = () => {
                             </span>
                             {activeTab === 'team' && task.assignedToName && (
                               <span className="text-xs text-purple-600">→ {task.assignedToName}</span>
+                            )}
+                            {task.assignedByName && (
+                              <span className="text-xs text-indigo-600">Assigned by {task.assignedByName}</span>
                             )}
                           </div>
                         </div>

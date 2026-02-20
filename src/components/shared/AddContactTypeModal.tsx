@@ -71,7 +71,7 @@ const AddContactTypeModal: React.FC<AddContactTypeModalProps> = ({ isOpen, onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Add Contact Type</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">

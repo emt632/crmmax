@@ -462,7 +462,10 @@ const TouchpointsList: React.FC = () => {
                             {(scopeFilter === 'team' || scopeFilter === 'all') && tp.created_by_name && (
                               <span className="text-purple-600 font-medium">by {tp.created_by_name}</span>
                             )}
-                            {tp.assigned_to_name && tp.assigned_to !== tp.created_by && (
+                            {scopeFilter === 'assigned' && tp.created_by_name && tp.assigned_to !== tp.created_by && (
+                              <span className="text-indigo-600 font-medium">Assigned by {tp.created_by_name}</span>
+                            )}
+                            {scopeFilter !== 'assigned' && tp.assigned_to_name && tp.assigned_to !== tp.created_by && (
                               <span className="text-indigo-500">assigned to {tp.assigned_to_name}</span>
                             )}
                           </div>

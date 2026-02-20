@@ -224,13 +224,13 @@ const OrganizationsList: React.FC = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      'bg-gradient-to-br from-emerald-500 to-teal-600',
-      'bg-gradient-to-br from-teal-500 to-cyan-600',
-      'bg-gradient-to-br from-cyan-500 to-blue-600',
-      'bg-gradient-to-br from-green-500 to-emerald-600',
-      'bg-gradient-to-br from-lime-500 to-green-600',
-      'bg-gradient-to-br from-indigo-500 to-purple-600',
-      'bg-gradient-to-br from-blue-500 to-indigo-600'
+      'bg-emerald-600',
+      'bg-teal-600',
+      'bg-cyan-600',
+      'bg-green-600',
+      'bg-lime-600',
+      'bg-indigo-600',
+      'bg-blue-600'
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
@@ -251,7 +251,7 @@ const OrganizationsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-emerald-600 rounded-xl p-8 text-white shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
@@ -279,7 +279,7 @@ const OrganizationsList: React.FC = () => {
           <div className="mt-6 lg:mt-0 flex flex-wrap gap-3">
             <button
               onClick={exportOrganizations}
-              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              className="inline-flex items-center px-3 py-2.5 sm:px-4 sm:py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Download className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
@@ -296,7 +296,7 @@ const OrganizationsList: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1">
@@ -387,7 +387,7 @@ const OrganizationsList: React.FC = () => {
 
       {/* Error */}
       {error && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-start">
             <svg className="h-5 w-5 text-yellow-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -402,7 +402,7 @@ const OrganizationsList: React.FC = () => {
 
       {/* Organizations Display */}
       {filteredOrganizations.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
           <div className="text-center">
             <div className="mx-auto h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center">
               <Building2 className="h-12 w-12 text-gray-400" />
@@ -425,7 +425,7 @@ const OrganizationsList: React.FC = () => {
           </div>
         </div>
       ) : viewMode === 'list' ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
             {filteredOrganizations.map((org) => {
               const orgTypes = getOrgTypes(org.id);
@@ -433,12 +433,12 @@ const OrganizationsList: React.FC = () => {
                 <Link
                   key={org.id}
                   to={`/organizations/${org.id}`}
-                  className="block hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all group"
+                  className="block hover:bg-gray-50 transition-colors group"
                 >
                   <div className="px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className={`flex-shrink-0 h-12 w-12 ${getAvatarColor(org.name)} rounded-xl flex items-center justify-center text-white font-semibold shadow-lg group-hover:scale-110 transition-transform`}>
+                        <div className={`flex-shrink-0 h-12 w-12 ${getAvatarColor(org.name)} rounded-xl flex items-center justify-center text-white font-semibold shadow-sm`}>
                           {getInitials(org.name)}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -447,7 +447,7 @@ const OrganizationsList: React.FC = () => {
                               {org.name}
                             </p>
                             {org.is_donor && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-800 border border-green-200">
                                 <Heart className="w-3 h-3 mr-1" />
                                 Donor
                               </span>
@@ -499,7 +499,7 @@ const OrganizationsList: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
                       </div>
                     </div>
                   </div>
@@ -516,12 +516,11 @@ const OrganizationsList: React.FC = () => {
               <Link
                 key={org.id}
                 to={`/organizations/${org.id}`}
-                className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200"
+                className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-600 opacity-0 group-hover:opacity-5 transition-opacity" />
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`h-16 w-16 ${getAvatarColor(org.name)} rounded-xl flex items-center justify-center text-white font-semibold text-lg shadow-lg group-hover:scale-110 transition-transform`}>
+                    <div className={`h-16 w-16 ${getAvatarColor(org.name)} rounded-xl flex items-center justify-center text-white font-semibold text-lg shadow-sm`}>
                       {getInitials(org.name)}
                     </div>
                   </div>

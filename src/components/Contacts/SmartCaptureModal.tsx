@@ -308,8 +308,8 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative bg-white shadow-2xl w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-lg sm:mx-4 overflow-hidden sm:max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      <div className="relative bg-white shadow-lg w-full h-full sm:h-auto sm:rounded-xl sm:max-w-lg sm:mx-4 overflow-hidden sm:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2">
@@ -673,7 +673,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleParseText}
               disabled={parsing || !signatureText.trim()}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 flex items-center transition-all"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
             >
               {parsing ? (
                 <>
@@ -693,7 +693,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleParseImage}
               disabled={parsing || !imageFile}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 flex items-center transition-all"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
             >
               {parsing ? (
                 <>
@@ -713,7 +713,7 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={saving || (!createContact && !createOrg)}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 flex items-center transition-all"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center transition-colors"
             >
               {saving ? (
                 <>

@@ -148,7 +148,7 @@ const ContactImport: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
@@ -161,7 +161,7 @@ const ContactImport: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('/contacts')}
-            className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Contacts
@@ -202,9 +202,9 @@ const ContactImport: React.FC = () => {
       {/* Drag & Drop Zone (show when no contacts parsed or after import) */}
       {parsedContacts.length === 0 && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
+          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${
             dragActive
-              ? 'border-blue-500 bg-blue-50 scale-[1.01]'
+              ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 bg-gray-50 hover:border-gray-400'
           }`}
           onDragOver={handleDragOver}
@@ -220,7 +220,7 @@ const ContactImport: React.FC = () => {
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-lg"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-md"
           >
             <Upload className="w-4 h-4 mr-2" />
             Browse Files
@@ -241,7 +241,7 @@ const ContactImport: React.FC = () => {
 
       {/* Preview Table */}
       {parsedContacts.length > 0 && !importResult && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -272,7 +272,7 @@ const ContactImport: React.FC = () => {
                 <button
                   onClick={handleImport}
                   disabled={importing || selectedCount === 0}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
                 >
                   {importing ? (
                     <>

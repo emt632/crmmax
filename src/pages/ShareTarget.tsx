@@ -197,7 +197,7 @@ const ShareTarget: React.FC = () => {
   if (saved) {
     return (
       <div className="max-w-lg mx-auto mt-8">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
@@ -232,7 +232,7 @@ const ShareTarget: React.FC = () => {
   if (contacts.length === 0) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+        <div className="bg-blue-600 rounded-xl p-6 sm:p-8 text-white shadow-sm">
           <h1 className="text-2xl font-bold flex items-center">
             <UserPlus className="w-7 h-7 mr-3" />
             Quick Import
@@ -253,9 +253,9 @@ const ShareTarget: React.FC = () => {
           {hasContactPicker && (
             <button
               onClick={handleContactPicker}
-              className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 flex items-center gap-4 hover:bg-blue-50 hover:border-blue-200 transition-all group"
+              className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center gap-4 hover:bg-blue-50 hover:border-blue-200 transition-all group"
             >
-              <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center">
                 <ContactRound className="w-7 h-7 text-blue-600" />
               </div>
               <div className="text-left">
@@ -268,9 +268,9 @@ const ShareTarget: React.FC = () => {
           {/* File picker (universal fallback) */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 flex items-center gap-4 hover:bg-blue-50 hover:border-blue-200 transition-all group"
+            className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center gap-4 hover:bg-blue-50 hover:border-blue-200 transition-all group"
           >
-            <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center">
               <FileUp className="w-7 h-7 text-indigo-600" />
             </div>
             <div className="text-left">
@@ -307,7 +307,7 @@ const ShareTarget: React.FC = () => {
   // Contacts loaded — show review cards
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="bg-blue-600 rounded-xl p-6 sm:p-8 text-white shadow-sm">
         <h1 className="text-2xl font-bold flex items-center">
           <UserPlus className="w-7 h-7 mr-3" />
           {contacts.length === 1 ? 'Review Contact' : `${contacts.length} Contacts`}
@@ -326,7 +326,7 @@ const ShareTarget: React.FC = () => {
       {contacts.map((contact, index) => (
         <div
           key={index}
-          className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
         >
           <div className="p-6 space-y-4">
             <div>
@@ -412,7 +412,7 @@ const ShareTarget: React.FC = () => {
             <button
               onClick={() => handleSave(contact)}
               disabled={saving}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center"
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center"
             >
               {saving ? (
                 <>
