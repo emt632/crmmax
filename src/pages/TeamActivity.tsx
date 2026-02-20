@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format, subDays, startOfDay, endOfDay, differenceInDays, startOfWeek, startOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Calendar,
@@ -9,6 +10,8 @@ import {
   CheckCircle2,
   ArrowUpDown,
   TrendingUp,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,9 +32,19 @@ interface UserStats {
 type SortKey = keyof UserStats;
 type SortDir = 'asc' | 'desc';
 type Period = 'day' | 'week' | 'month';
+type DrillDownType = 'contacts' | 'touchpoints' | 'openFollowUps' | 'closedFollowUps' | null;
+
+interface DrillDownRecord {
+  id: string;
+  label: string;
+  sublabel?: string;
+  date: string;
+  user: string;
+}
 
 const TeamActivity: React.FC = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const [dateFrom, setDateFrom] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(() => format(new Date(), 'yyyy-MM-dd'));
@@ -45,8 +58,13 @@ const TeamActivity: React.FC = () => {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
+  const [drillDown, setDrillDown] = useState<DrillDownType>(null);
+  const [drillDownRecords, setDrillDownRecords] = useState<DrillDownRecord[]>([]);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
+
   useEffect(() => {
     if (isAdmin) fetchData();
+    setDrillDown(null);
   }, [isAdmin, dateFrom, dateTo]);
 
   useEffect(() => {
@@ -186,6 +204,110 @@ const TeamActivity: React.FC = () => {
     }
   };
 
+  const handleDrillDown = async (type: DrillDownType) => {
+    if (drillDown === type) {
+      setDrillDown(null);
+      return;
+    }
+    setDrillDown(type);
+    setDrillDownLoading(true);
+
+    try {
+      const from = startOfDay(new Date(dateFrom)).toISOString();
+      const to = endOfDay(new Date(dateTo)).toISOString();
+
+      // Build a user name map
+      const userMap = new Map(users.map(u => [u.id, u.full_name || u.email]));
+
+      let records: DrillDownRecord[] = [];
+
+      if (type === 'contacts') {
+        const { data } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name, title, created_by, created_at')
+          .gte('created_at', from)
+          .lte('created_at', to)
+          .order('created_at', { ascending: false });
+
+        records = (data || []).map((c: any) => ({
+          id: c.id,
+          label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed',
+          sublabel: c.title || undefined,
+          date: c.created_at,
+          user: userMap.get(c.created_by) || 'Unknown',
+        }));
+      } else if (type === 'touchpoints') {
+        const { data } = await supabase
+          .from('touchpoints')
+          .select('id, type, summary, contact_id, created_by, date, contacts(first_name, last_name)')
+          .gte('date', from)
+          .lte('date', to)
+          .order('date', { ascending: false });
+
+        records = (data || []).map((t: any) => ({
+          id: t.id,
+          label: t.contacts ? `${t.contacts.first_name || ''} ${t.contacts.last_name || ''}`.trim() : 'No contact',
+          sublabel: `${t.type}${t.summary ? ' — ' + t.summary.substring(0, 60) : ''}`,
+          date: t.date,
+          user: userMap.get(t.created_by) || 'Unknown',
+        }));
+      } else if (type === 'openFollowUps') {
+        const { data } = await supabase
+          .from('touchpoints')
+          .select('id, type, summary, follow_up_date, contact_id, created_by, date, contacts(first_name, last_name)')
+          .eq('follow_up_required', true)
+          .eq('follow_up_completed', false)
+          .order('follow_up_date', { ascending: true });
+
+        records = (data || []).map((t: any) => ({
+          id: t.id,
+          label: t.contacts ? `${t.contacts.first_name || ''} ${t.contacts.last_name || ''}`.trim() : 'No contact',
+          sublabel: `${t.type}${t.summary ? ' — ' + t.summary.substring(0, 60) : ''}`,
+          date: t.follow_up_date || t.date,
+          user: userMap.get(t.created_by) || 'Unknown',
+        }));
+      } else if (type === 'closedFollowUps') {
+        const { data } = await supabase
+          .from('touchpoints')
+          .select('id, type, summary, contact_id, created_by, date, contacts(first_name, last_name)')
+          .eq('follow_up_required', true)
+          .eq('follow_up_completed', true)
+          .gte('date', from)
+          .lte('date', to)
+          .order('date', { ascending: false });
+
+        records = (data || []).map((t: any) => ({
+          id: t.id,
+          label: t.contacts ? `${t.contacts.first_name || ''} ${t.contacts.last_name || ''}`.trim() : 'No contact',
+          sublabel: `${t.type}${t.summary ? ' — ' + t.summary.substring(0, 60) : ''}`,
+          date: t.date,
+          user: userMap.get(t.created_by) || 'Unknown',
+        }));
+      }
+
+      setDrillDownRecords(records);
+    } catch {
+      setDrillDownRecords([]);
+    } finally {
+      setDrillDownLoading(false);
+    }
+  };
+
+  const drillDownTitle: Record<string, string> = {
+    contacts: 'Contacts Created',
+    touchpoints: 'Touchpoints',
+    openFollowUps: 'Open Follow-ups',
+    closedFollowUps: 'Closed Follow-ups',
+  };
+
+  const handleDrillDownClick = (record: DrillDownRecord) => {
+    if (drillDown === 'contacts') {
+      navigate(`/contacts/${record.id}`);
+    } else {
+      navigate(`/touchpoints/${record.id}`);
+    }
+  };
+
   const maxTrend = Math.max(...trendData.map(d => d.count), 1);
 
   const totals = useMemo(() => ({
@@ -242,43 +364,69 @@ const TeamActivity: React.FC = () => {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-lg bg-blue-50">
-              <Users className="w-5 h-5 text-blue-600" />
+        {([
+          { type: 'contacts' as DrillDownType, icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', activeBorder: 'border-blue-400 ring-2 ring-blue-100', count: totals.contacts, label: 'Contacts Created' },
+          { type: 'touchpoints' as DrillDownType, icon: Phone, iconBg: 'bg-purple-50', iconColor: 'text-purple-600', activeBorder: 'border-purple-400 ring-2 ring-purple-100', count: totals.touchpoints, label: 'Touchpoints' },
+          { type: 'openFollowUps' as DrillDownType, icon: AlertCircle, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', activeBorder: 'border-amber-400 ring-2 ring-amber-100', count: totals.openFollowUps, label: 'Open Follow-ups' },
+          { type: 'closedFollowUps' as DrillDownType, icon: CheckCircle2, iconBg: 'bg-green-50', iconColor: 'text-green-600', activeBorder: 'border-green-400 ring-2 ring-green-100', count: totals.closedFollowUps, label: 'Closed Follow-ups' },
+        ]).map(card => (
+          <button
+            key={card.type}
+            onClick={() => handleDrillDown(card.type)}
+            className={`bg-white rounded-xl shadow-sm border-2 p-5 text-left transition-all hover:shadow-md cursor-pointer ${
+              drillDown === card.type ? card.activeBorder : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className={`p-2.5 rounded-lg ${card.iconBg}`}>
+                <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-3xl font-bold text-gray-900">{card.count}</p>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${drillDown === card.type ? 'rotate-180' : ''}`} />
+              </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totals.contacts}</p>
-          </div>
-          <p className="text-sm font-medium text-gray-500 mt-3">Contacts Created</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-lg bg-purple-50">
-              <Phone className="w-5 h-5 text-purple-600" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totals.touchpoints}</p>
-          </div>
-          <p className="text-sm font-medium text-gray-500 mt-3">Touchpoints</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-lg bg-amber-50">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totals.openFollowUps}</p>
-          </div>
-          <p className="text-sm font-medium text-gray-500 mt-3">Open Follow-ups</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-lg bg-green-50">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totals.closedFollowUps}</p>
-          </div>
-          <p className="text-sm font-medium text-gray-500 mt-3">Closed Follow-ups</p>
-        </div>
+            <p className="text-sm font-medium text-gray-500 mt-3">{card.label}</p>
+          </button>
+        ))}
       </div>
+
+      {/* Drill-down panel */}
+      {drillDown && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">{drillDownTitle[drillDown]} — Detail</h3>
+            <span className="text-xs text-gray-500">{drillDownRecords.length} records</span>
+          </div>
+          {drillDownLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+            </div>
+          ) : drillDownRecords.length === 0 ? (
+            <div className="py-8 text-center text-sm text-gray-500">No records found.</div>
+          ) : (
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+              {drillDownRecords.map(r => (
+                <div
+                  key={r.id}
+                  onClick={() => handleDrillDownClick(r)}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{r.label}</p>
+                    {r.sublabel && <p className="text-xs text-gray-500 truncate">{r.sublabel}</p>}
+                  </div>
+                  <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                    <span className="text-xs text-gray-500">{r.user}</span>
+                    <span className="text-xs text-gray-400">{format(new Date(r.date), 'MMM d')}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* User stats table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
