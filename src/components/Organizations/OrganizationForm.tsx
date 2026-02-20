@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { Organization, ContactType, ContactTypeAssignment, Contact } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { formatPhone } from '../../lib/format-phone';
 import { useAuth } from '../../contexts/AuthContext';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
 import CMSHospitalLookupModal from './CMSHospitalLookupModal';
@@ -475,8 +476,8 @@ const OrganizationForm: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input
                 type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
+                value={formatPhone(formData.phone || '')}
+                onChange={(e) => handleInputChange('phone', formatPhone(e.target.value))}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 transition-all duration-200 hover:border-gray-300"
               />
             </div>
@@ -664,7 +665,7 @@ const OrganizationForm: React.FC = () => {
                         {(contact.phone_mobile || contact.phone_office) && (
                           <span className="flex items-center">
                             <Phone className="w-3 h-3 mr-1" />
-                            {contact.phone_mobile || contact.phone_office}
+                            {formatPhone(contact.phone_mobile || contact.phone_office || '')}
                           </span>
                         )}
                       </div>

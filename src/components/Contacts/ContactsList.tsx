@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { formatPhone } from '../../lib/format-phone';
 import { contactsToVCardFile, downloadVCard } from '../../lib/vcard';
 
 const ContactsList: React.FC = () => {
@@ -714,7 +715,7 @@ const ContactsList: React.FC = () => {
                           {contact.phone_mobile && (
                             <div className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
                               <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                              {contact.phone_mobile}
+                              {formatPhone(contact.phone_mobile)}
                             </div>
                           )}
                           {contact.city && contact.state && (
@@ -785,7 +786,7 @@ const ContactsList: React.FC = () => {
                     {contact.phone_mobile && (
                       <div className="flex items-center text-sm text-gray-600">
                         <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                        <span>{contact.phone_mobile}</span>
+                        <span>{formatPhone(contact.phone_mobile)}</span>
                       </div>
                     )}
                     

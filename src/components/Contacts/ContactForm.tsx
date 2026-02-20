@@ -27,6 +27,7 @@ import type { Contact, Organization, ContactOrganization, ContactType, ContactTy
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { contactToVCard, downloadVCard } from '../../lib/vcard';
+import { formatPhone } from '../../lib/format-phone';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
 import SmartCaptureModal from './SmartCaptureModal';
 import { uploadContactPhoto, deleteContactPhoto } from '../../lib/photo-upload';
@@ -45,6 +46,7 @@ const contactTypeIcons: Record<string, LucideIcon> = {
 const getTypeIcon = (name: string): LucideIcon => {
   return contactTypeIcons[name.toLowerCase()] || Tag;
 };
+
 
 const ContactForm: React.FC = () => {
   const navigate = useNavigate();
@@ -703,8 +705,8 @@ const ContactForm: React.FC = () => {
               <label className="block text-xs font-medium text-gray-600 mb-0.5">Mobile</label>
               <input
                 type="tel"
-                value={formData.phone_mobile || ''}
-                onChange={(e) => handleInputChange('phone_mobile', e.target.value)}
+                value={formatPhone(formData.phone_mobile || '')}
+                onChange={(e) => handleInputChange('phone_mobile', formatPhone(e.target.value))}
                 className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
@@ -712,8 +714,8 @@ const ContactForm: React.FC = () => {
               <label className="block text-xs font-medium text-gray-600 mb-0.5">Office</label>
               <input
                 type="tel"
-                value={formData.phone_office || ''}
-                onChange={(e) => handleInputChange('phone_office', e.target.value)}
+                value={formatPhone(formData.phone_office || '')}
+                onChange={(e) => handleInputChange('phone_office', formatPhone(e.target.value))}
                 className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
@@ -721,8 +723,8 @@ const ContactForm: React.FC = () => {
               <label className="block text-xs font-medium text-gray-600 mb-0.5">Home</label>
               <input
                 type="tel"
-                value={formData.phone_home || ''}
-                onChange={(e) => handleInputChange('phone_home', e.target.value)}
+                value={formatPhone(formData.phone_home || '')}
+                onChange={(e) => handleInputChange('phone_home', formatPhone(e.target.value))}
                 className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm"
               />
             </div>
