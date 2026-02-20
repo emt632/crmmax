@@ -15,8 +15,11 @@ export interface UserProfile {
   id: string;
   email: string;
   role: UserRole;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string | null;
   is_active: boolean;
+  reports_to: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -290,8 +293,6 @@ export type TouchpointType = 'phone' | 'email' | 'in-person' | 'virtual' | 'othe
 
 export interface Touchpoint {
   id: string;
-  contact_id?: string;
-  organization_id?: string;
   type: TouchpointType;
   date: string;
   duration?: number;
@@ -301,12 +302,33 @@ export interface Touchpoint {
   follow_up_date?: string;
   follow_up_notes?: string;
   follow_up_completed: boolean;
+  assigned_to?: string;
   created_by: string;
   created_at: string;
   updated_at: string;
-  // Joined fields
-  contact_name?: string;
-  organization_name?: string;
+  // Joined arrays from junction tables
+  contacts?: { id: string; first_name: string; last_name: string }[];
+  organizations?: { id: string; name: string }[];
+  // Display fields (built from joined arrays)
+  contact_names?: string;
+  organization_names?: string;
+  // Display fields for assignment
+  assigned_to_name?: string;
+  created_by_name?: string;
+}
+
+export interface TouchpointContact {
+  touchpoint_id: string;
+  contact_id: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface TouchpointOrganization {
+  touchpoint_id: string;
+  organization_id: string;
+  created_by: string;
+  created_at: string;
 }
 
 export interface RideAlong {

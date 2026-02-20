@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import type { Touchpoint, TouchpointType } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+
+type ScopeFilter = 'mine' | 'assigned' | 'team' | 'all';
 
 const TOUCHPOINT_TYPE_CONFIG: Record<TouchpointType, { icon: React.FC<any>; color: string; label: string }> = {
   'phone': { icon: Phone, color: 'bg-blue-100 text-blue-700', label: 'Phone Call' },
@@ -29,6 +32,9 @@ const TOUCHPOINT_TYPE_CONFIG: Record<TouchpointType, { icon: React.FC<any>; colo
 };
 
 const TouchpointsList: React.FC = () => {
+  const {
+    effectiveUserId, effectiveIsAdmin, effectiveIsManager, effectiveSubordinateIds,
+  } = useAuth();
   const [touchpoints, setTouchpoints] = useState<Touchpoint[]>([]);
   const [filteredTouchpoints, setFilteredTouchpoints] = useState<Touchpoint[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,35 +42,66 @@ const TouchpointsList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [followUpFilter, setFollowUpFilter] = useState<string>('all');
+  const [scopeFilter, setScopeFilter] = useState<ScopeFilter>('mine');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchTouchpoints();
-  }, []);
+  }, [scopeFilter, effectiveUserId]);
 
   useEffect(() => {
     filterTouchpoints();
   }, [searchTerm, touchpoints, typeFilter, followUpFilter]);
 
   const fetchTouchpoints = async () => {
+    if (!effectiveUserId) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('touchpoints')
         .select(`
           *,
-          contacts:contact_id(first_name, last_name),
-          organizations:organization_id(name)
+          creator:created_by(full_name),
+          assignee:assigned_to(full_name),
+          touchpoint_contacts(contact:contact_id(id, first_name, last_name)),
+          touchpoint_organizations(organization:organization_id(id, name))
         `)
         .order('date', { ascending: false });
 
+      // Apply scope filter using effective (impersonated or real) user
+      if (scopeFilter === 'mine') {
+        query = query.eq('created_by', effectiveUserId);
+      } else if (scopeFilter === 'assigned') {
+        query = query.eq('assigned_to', effectiveUserId);
+      } else if (scopeFilter === 'team') {
+        if (!effectiveIsAdmin && effectiveSubordinateIds.length > 0) {
+          query = query.in('created_by', effectiveSubordinateIds);
+        }
+        // Admin sees all in team view (no filter needed — RLS handles it)
+      }
+      // 'all' — no filter, RLS handles visibility
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
-      const mapped = (data || []).map((tp: any) => ({
-        ...tp,
-        contact_name: tp.contacts ? `${tp.contacts.first_name} ${tp.contacts.last_name}` : undefined,
-        organization_name: tp.organizations?.name || undefined,
-      }));
+      const mapped = (data || []).map((tp: any) => {
+        const contactArr = (tp.touchpoint_contacts || [])
+          .map((tc: any) => tc.contact)
+          .filter(Boolean);
+        const orgArr = (tp.touchpoint_organizations || [])
+          .map((to: any) => to.organization)
+          .filter(Boolean);
+        return {
+          ...tp,
+          contacts: contactArr,
+          organizations: orgArr,
+          contact_names: contactArr.map((c: any) => `${c.first_name} ${c.last_name}`).join(', ') || undefined,
+          organization_names: orgArr.map((o: any) => o.name).join(', ') || undefined,
+          created_by_name: tp.creator?.full_name || undefined,
+          assigned_to_name: tp.assignee?.full_name || undefined,
+        };
+      });
       setTouchpoints(mapped);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch touchpoints');
@@ -82,8 +119,8 @@ const TouchpointsList: React.FC = () => {
       filtered = filtered.filter(tp =>
         tp.subject.toLowerCase().includes(term) ||
         tp.notes?.toLowerCase().includes(term) ||
-        tp.contact_name?.toLowerCase().includes(term) ||
-        tp.organization_name?.toLowerCase().includes(term)
+        tp.contact_names?.toLowerCase().includes(term) ||
+        tp.organization_names?.toLowerCase().includes(term)
       );
     }
 
@@ -103,7 +140,6 @@ const TouchpointsList: React.FC = () => {
   const getSampleTouchpoints = (): Touchpoint[] => [
     {
       id: 'tp-1',
-      contact_id: '1',
       type: 'phone',
       date: new Date().toISOString(),
       duration: 30,
@@ -116,12 +152,11 @@ const TouchpointsList: React.FC = () => {
       created_by: 'user-1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      contact_name: 'Sarah Mitchell',
-      organization_name: 'Mayo Clinic'
+      contact_names: 'Sarah Mitchell',
+      organization_names: 'Mayo Clinic'
     },
     {
       id: 'tp-2',
-      contact_id: '2',
       type: 'email',
       date: new Date(Date.now() - 86400000).toISOString(),
       subject: 'Flight operations coordination',
@@ -131,13 +166,11 @@ const TouchpointsList: React.FC = () => {
       created_by: 'user-1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      contact_name: 'John Anderson',
-      organization_name: 'Sanford Health'
+      contact_names: 'John Anderson',
+      organization_names: 'Sanford Health'
     },
     {
       id: 'tp-3',
-      contact_id: '3',
-      organization_id: 'org-1',
       type: 'in-person',
       date: new Date(Date.now() - 2 * 86400000).toISOString(),
       duration: 60,
@@ -150,12 +183,11 @@ const TouchpointsList: React.FC = () => {
       created_by: 'user-1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      contact_name: 'Emily Johnson',
-      organization_name: 'Mayo Clinic'
+      contact_names: 'Emily Johnson',
+      organization_names: 'Mayo Clinic'
     },
     {
       id: 'tp-4',
-      contact_id: '4',
       type: 'virtual',
       date: new Date(Date.now() - 5 * 86400000).toISOString(),
       duration: 45,
@@ -166,8 +198,8 @@ const TouchpointsList: React.FC = () => {
       created_by: 'user-1',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      contact_name: 'Michael Brown',
-      organization_name: 'Essentia Health'
+      contact_names: 'Michael Brown',
+      organization_names: 'Essentia Health'
     }
   ];
 
@@ -201,7 +233,7 @@ const TouchpointsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-purple-600 rounded-xl p-8 text-white shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center">
@@ -239,7 +271,7 @@ const TouchpointsList: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1">
@@ -264,6 +296,17 @@ const TouchpointsList: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <select
+                value={scopeFilter}
+                onChange={(e) => setScopeFilter(e.target.value as ScopeFilter)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="mine">My Touchpoints</option>
+                <option value="assigned">Assigned to Me</option>
+                {(effectiveIsManager || effectiveIsAdmin) && <option value="team">Team</option>}
+                {effectiveIsAdmin && <option value="all">All</option>}
+              </select>
+
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -327,7 +370,7 @@ const TouchpointsList: React.FC = () => {
 
       {/* Error */}
       {error && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-start">
             <svg className="h-5 w-5 text-yellow-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -342,7 +385,7 @@ const TouchpointsList: React.FC = () => {
 
       {/* Touchpoints List */}
       {filteredTouchpoints.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
           <div className="text-center">
             <div className="mx-auto h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center">
               <Phone className="h-12 w-12 text-gray-400" />
@@ -365,7 +408,7 @@ const TouchpointsList: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
             {filteredTouchpoints.map((tp) => {
               const typeConfig = TOUCHPOINT_TYPE_CONFIG[tp.type];
@@ -378,8 +421,8 @@ const TouchpointsList: React.FC = () => {
                   to={`/touchpoints/${tp.id}`}
                   className={`block transition-all group ${
                     isPendingFollowUp
-                      ? 'hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 bg-amber-50/30'
-                      : 'hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50'
+                      ? 'hover:bg-amber-50 bg-amber-50/30'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className="px-6 py-5">
@@ -410,11 +453,17 @@ const TouchpointsList: React.FC = () => {
                             )}
                           </div>
                           <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                            {tp.contact_name && (
-                              <span>{tp.contact_name}</span>
+                            {tp.contact_names && (
+                              <span>{tp.contact_names}</span>
                             )}
-                            {tp.organization_name && (
-                              <span className="text-gray-400">@ {tp.organization_name}</span>
+                            {tp.organization_names && (
+                              <span className="text-gray-400">@ {tp.organization_names}</span>
+                            )}
+                            {(scopeFilter === 'team' || scopeFilter === 'all') && tp.created_by_name && (
+                              <span className="text-purple-600 font-medium">by {tp.created_by_name}</span>
+                            )}
+                            {tp.assigned_to_name && tp.assigned_to !== tp.created_by && (
+                              <span className="text-indigo-500">assigned to {tp.assigned_to_name}</span>
                             )}
                           </div>
                         </div>
@@ -438,7 +487,7 @@ const TouchpointsList: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
                       </div>
                     </div>
                   </div>

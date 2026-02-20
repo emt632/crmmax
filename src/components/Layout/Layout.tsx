@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Plus, User, Building2, Phone, X, ContactRound } from 'lucide-react';
 import Sidebar from './Sidebar';
+import ImpersonationBanner from './ImpersonationBanner';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fabItems = [
@@ -16,11 +17,11 @@ const Layout: React.FC = () => {
   const [fabOpen, setFabOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar onSignOut={signOut} userEmail={user?.email} userName={profile?.full_name} />
-      <main className="flex-1 overflow-y-auto relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
-        <div className="relative p-6 pt-20 lg:p-10 lg:pt-10 max-w-[1600px] mx-auto">
+      <main className="flex-1 overflow-y-auto">
+        <ImpersonationBanner />
+        <div className="p-6 pt-20 lg:p-10 lg:pt-10 max-w-[1600px] mx-auto">
           <Outlet />
         </div>
       </main>
@@ -35,7 +36,7 @@ const Layout: React.FC = () => {
         {/* Main FAB button */}
         <button
           onClick={() => setFabOpen(!fabOpen)}
-          className={`w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl flex items-center justify-center transition-transform duration-200 ${
+          className={`w-14 h-14 rounded-full bg-blue-600 text-white shadow-md flex items-center justify-center transition-transform duration-200 ${
             fabOpen ? 'rotate-45' : ''
           }`}
         >
