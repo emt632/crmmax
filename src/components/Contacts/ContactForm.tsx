@@ -10,8 +10,18 @@ import {
   Download,
   Sparkles,
   Camera,
-  Info
+  Info,
+  Siren,
+  Flame,
+  Hospital,
+  Landmark,
+  GraduationCap,
+  Package,
+  Users,
+  Briefcase,
+  Tag,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment, SmartCaptureResult } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +30,21 @@ import { contactToVCard, downloadVCard } from '../../lib/vcard';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
 import SmartCaptureModal from './SmartCaptureModal';
 import { uploadContactPhoto, deleteContactPhoto } from '../../lib/photo-upload';
+
+const contactTypeIcons: Record<string, LucideIcon> = {
+  ems: Siren,
+  fire: Flame,
+  hospital: Hospital,
+  government: Landmark,
+  education: GraduationCap,
+  vendor: Package,
+  association: Users,
+  'industry contact': Briefcase,
+};
+
+const getTypeIcon = (name: string): LucideIcon => {
+  return contactTypeIcons[name.toLowerCase()] || Tag;
+};
 
 const ContactForm: React.FC = () => {
   const navigate = useNavigate();
@@ -616,29 +641,32 @@ const ContactForm: React.FC = () => {
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {contactTypes.map(ct => (
-                <label
-                  key={ct.id}
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full border cursor-pointer transition-all text-xs font-medium ${
-                    selectedTypeIds.includes(ct.id)
-                      ? 'shadow-sm'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                  style={selectedTypeIds.includes(ct.id) ? { borderColor: ct.color, backgroundColor: ct.color + '15', color: ct.color } : undefined}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTypeIds.includes(ct.id)}
-                    onChange={() => toggleType(ct.id)}
-                    className="sr-only"
-                  />
-                  <div
-                    className="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0"
-                    style={{ backgroundColor: ct.color }}
-                  />
-                  {ct.name}
-                </label>
-              ))}
+              {contactTypes.map(ct => {
+                const TypeIcon = getTypeIcon(ct.name);
+                return (
+                  <label
+                    key={ct.id}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full border cursor-pointer transition-all text-xs font-medium ${
+                      selectedTypeIds.includes(ct.id)
+                        ? 'shadow-sm'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                    style={selectedTypeIds.includes(ct.id) ? { borderColor: ct.color, backgroundColor: ct.color + '15', color: ct.color } : undefined}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTypeIds.includes(ct.id)}
+                      onChange={() => toggleType(ct.id)}
+                      className="sr-only"
+                    />
+                    <TypeIcon
+                      className="w-3 h-3 mr-1.5 flex-shrink-0"
+                      style={{ color: selectedTypeIds.includes(ct.id) ? ct.color : undefined }}
+                    />
+                    {ct.name}
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
