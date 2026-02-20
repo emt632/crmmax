@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Save,
@@ -11,12 +11,18 @@ import {
   MapPin,
   Building2,
   DollarSign,
-  Tag
+  Tag,
+  Download,
+  Sparkles,
+  Camera
 } from 'lucide-react';
-import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment } from '../../types';
+import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment, SmartCaptureResult } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { contactToVCard, downloadVCard } from '../../lib/vcard';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
+import SmartCaptureModal from './SmartCaptureModal';
+import { uploadContactPhoto, deleteContactPhoto } from '../../lib/photo-upload';
 
 const ContactForm: React.FC = () => {
   const navigate = useNavigate();
@@ -26,12 +32,19 @@ const ContactForm: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [contactOrganizations, setContactOrganizations] = useState<ContactOrganization[]>([]);
   const [contactTypes, setContactTypes] = useState<ContactType[]>([]);
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [existingAssignments, setExistingAssignments] = useState<ContactTypeAssignment[]>([]);
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [showSmartCapture, setShowSmartCapture] = useState(false);
+  const [pendingOrgLink, setPendingOrgLink] = useState<{ organizationId: string; organizationName: string; role?: string } | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<Partial<Contact>>({
     first_name: '',
@@ -48,6 +61,7 @@ const ContactForm: React.FC = () => {
     state: '',
     zip: '',
     is_donor: false,
+    is_vip: false,
     notes: ''
   });
 
@@ -160,6 +174,10 @@ const ContactForm: React.FC = () => {
       if (error) throw error;
       if (data) {
         setFormData(data);
+        if (data.photo_url) {
+          setPhotoPreview(data.photo_url);
+          setOriginalPhotoUrl(data.photo_url);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch contact:', err);
@@ -220,6 +238,36 @@ const ContactForm: React.FC = () => {
         contactId = data?.id;
       }
 
+      // Create pending org link if Smart Capture created/matched an organization
+      if (contactId && pendingOrgLink) {
+        await supabase
+          .from('contact_organizations')
+          .insert([{
+            contact_id: contactId,
+            organization_id: pendingOrgLink.organizationId,
+            role: pendingOrgLink.role || null,
+            is_primary: true,
+            created_by: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+        setPendingOrgLink(null);
+      }
+
+      // Save pending affiliation from the affiliation form (if user filled it but didn't click "Add Affiliation")
+      if (contactId && newAffiliation.organization_id) {
+        await supabase
+          .from('contact_organizations')
+          .insert([{
+            contact_id: contactId,
+            ...newAffiliation,
+            created_by: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+        setNewAffiliation({ organization_id: '', role: '', department: '', is_primary: false });
+      }
+
       // Sync type assignments
       if (contactId) {
         const toRemove = existingAssignments.filter(
@@ -246,11 +294,38 @@ const ContactForm: React.FC = () => {
         }
       }
 
+      // Handle photo upload/removal
+      if (contactId) {
+        if (photoFile) {
+          try {
+            if (originalPhotoUrl) {
+              await deleteContactPhoto(originalPhotoUrl);
+            }
+            const newPhotoUrl = await uploadContactPhoto(contactId, photoFile);
+            await supabase
+              .from('contacts')
+              .update({ photo_url: newPhotoUrl })
+              .eq('id', contactId);
+          } catch (err) {
+            console.error('Photo upload failed:', err);
+          }
+        } else if (!photoPreview && originalPhotoUrl) {
+          try {
+            await deleteContactPhoto(originalPhotoUrl);
+            await supabase
+              .from('contacts')
+              .update({ photo_url: null })
+              .eq('id', contactId);
+          } catch (err) {
+            console.error('Photo removal failed:', err);
+          }
+        }
+      }
+
       navigate('/contacts');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save contact:', err);
-      // In case of error, still navigate (for demo purposes)
-      navigate('/contacts');
+      setSaveError(err?.message || JSON.stringify(err));
     } finally {
       setSaving(false);
     }
@@ -317,6 +392,55 @@ const ContactForm: React.FC = () => {
     return org?.name || 'Unknown Organization';
   };
 
+  const handleExportVCard = () => {
+    const primaryAff = contactOrganizations.find(co => co.is_primary) || contactOrganizations[0];
+    let orgName: string | undefined;
+    let orgRole: string | undefined;
+    if (primaryAff) {
+      const org = organizations.find(o => o.id === primaryAff.organization_id);
+      orgName = org?.name;
+      orgRole = primaryAff.role;
+    }
+    const vcardString = contactToVCard(formData as Contact, orgName, orgRole);
+    const filename = `${formData.first_name || 'contact'}-${formData.last_name || ''}`.toLowerCase().replace(/\s+/g, '-') + '.vcf';
+    downloadVCard(vcardString, filename);
+  };
+
+  const handleSmartCaptureResult = (result: SmartCaptureResult) => {
+    // Merge contact data — only fill empty fields
+    setFormData(prev => {
+      const updated = { ...prev };
+      for (const [key, value] of Object.entries(result.contactData)) {
+        if (value && !(prev as any)[key]) {
+          (updated as any)[key] = value;
+        }
+      }
+      return updated;
+    });
+
+    // Store pending org link if an organization was created/matched
+    if (result.organizationId) {
+      const org = organizations.find(o => o.id === result.organizationId);
+      setPendingOrgLink({
+        organizationId: result.organizationId,
+        organizationName: org?.name || 'Organization',
+        role: result.organizationRole
+      });
+      // Refresh organizations list in case a new one was created
+      fetchOrganizations();
+    }
+  };
+
+  const handlePhotoSelected = (file: File) => {
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -339,14 +463,59 @@ const ContactForm: React.FC = () => {
               {isEditing ? 'Update contact information' : 'Add a new contact to your CRM'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/contacts')}
-            className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setShowSmartCapture(true)}
+              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Smart Capture
+            </button>
+            {isEditing && !loading && (
+              <button
+                type="button"
+                onClick={handleExportVCard}
+                className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export vCard
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate('/contacts')}
+              className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
+
+        {/* Pending Organization Link Banner */}
+        {pendingOrgLink && (
+          <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <Building2 className="w-5 h-5 text-purple-600 mr-3" />
+              <div>
+                <p className="text-sm font-medium text-purple-900">
+                  Organization will be linked on save
+                </p>
+                <p className="text-sm text-purple-700">
+                  {pendingOrgLink.organizationName}
+                  {pendingOrgLink.role && ` — ${pendingOrgLink.role}`}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPendingOrgLink(null)}
+              className="p-1 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Basic Information */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
@@ -356,6 +525,55 @@ const ContactForm: React.FC = () => {
             </div>
             <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
           </div>
+
+          {/* Photo Upload */}
+          <div className="flex justify-center mb-6">
+            <div className="relative group">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoSelected(file);
+                  e.target.value = '';
+                }}
+              />
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt="Contact photo"
+                  className="h-24 w-24 rounded-2xl object-cover shadow-lg cursor-pointer"
+                  onClick={() => photoInputRef.current?.click()}
+                />
+              ) : (
+                <div
+                  className="h-24 w-24 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer hover:from-blue-200 hover:to-indigo-200 transition-all shadow-lg"
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  <Camera className="w-8 h-8 text-blue-400" />
+                </div>
+              )}
+              <div
+                className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+              {photoPreview && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-center text-xs text-gray-500 -mt-4 mb-4">Click to upload photo</p>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -692,6 +910,18 @@ const ContactForm: React.FC = () => {
               This contact is a donor
             </label>
           </div>
+          <div className="flex items-center mt-3">
+            <input
+              type="checkbox"
+              id="isVip"
+              checked={formData.is_vip || false}
+              onChange={(e) => handleInputChange('is_vip', e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="isVip" className="text-sm text-gray-700">
+              This contact is a VIP
+            </label>
+          </div>
         </div>
 
         {/* Notes */}
@@ -707,6 +937,13 @@ const ContactForm: React.FC = () => {
             placeholder="Add any additional notes about this contact..."
           />
         </div>
+
+        {saveError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-sm text-red-700 font-medium">Save failed:</p>
+            <p className="text-sm text-red-600 mt-1">{saveError}</p>
+          </div>
+        )}
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4 pt-6">
@@ -744,6 +981,14 @@ const ContactForm: React.FC = () => {
           setContactTypes(prev => [...prev, newType]);
           setSelectedTypeIds(prev => [...prev, newType.id]);
         }}
+      />
+
+      <SmartCaptureModal
+        isOpen={showSmartCapture}
+        onClose={() => setShowSmartCapture(false)}
+        onResult={handleSmartCaptureResult}
+        existingOrganizations={organizations}
+        userId={user?.id || ''}
       />
     </div>
   );

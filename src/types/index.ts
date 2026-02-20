@@ -1,4 +1,5 @@
-export type UserRole = 
+export type UserRole =
+  | 'admin'
   | 'Executive Leader'
   | 'Partner Engagement Manager'
   | 'Clinical Manager'
@@ -9,6 +10,16 @@ export type UserRole =
   | 'Supervisor'
   | 'Marketing'
   | 'General';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  full_name: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface User {
   id: string;
@@ -36,7 +47,8 @@ export interface Contact {
   last_name: string;
   title?: string;
   notes?: string;
-  
+  photo_url?: string;
+
   // Email fields
   email_work?: string;
   email_personal?: string;
@@ -53,9 +65,10 @@ export interface Contact {
   state?: string;
   zip?: string;
   
-  // Donor flag
+  // Status flags
   is_donor: boolean;
-  
+  is_vip: boolean;
+
   // Metadata
   created_by: string;
   created_at: string;
@@ -84,7 +97,12 @@ export interface Organization {
   
   // Additional fields
   notes?: string;
-  
+
+  // CMS Hospital data
+  cms_certification_number?: string;
+  hospital_type?: string;
+  hospital_ownership?: string;
+
   // Metadata
   created_by: string;
   created_at: string;
@@ -360,7 +378,13 @@ export interface PRRequest {
   
   approvedBy?: string;
   approvedAt?: string;
-  
+
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SmartCaptureResult {
+  contactData: Partial<Contact>;
+  organizationId?: string;
+  organizationRole?: string;
 }

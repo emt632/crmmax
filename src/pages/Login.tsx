@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
-  const { user, loading, signIn, signUp } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { user, loading, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,10 +28,7 @@ const Login: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const { error: authError } = isSignUp
-        ? await signUp(email, password)
-        : await signIn(email, password);
-
+      const { error: authError } = await signIn(email, password);
       if (authError) {
         setError(authError.message);
       }
@@ -57,27 +53,7 @@ const Login: React.FC = () => {
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 p-8">
-          {/* Toggle */}
-          <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-            <button
-              type="button"
-              onClick={() => { setIsSignUp(false); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                !isSignUp ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setIsSignUp(true); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                isSignUp ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
+          <h2 className="text-xl font-semibold text-gray-900 text-center mb-6">Sign In</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -104,7 +80,7 @@ const Login: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isSignUp ? 'Min 6 characters' : 'Your password'}
+                  placeholder="Your password"
                   minLength={6}
                   className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
                 />
@@ -124,11 +100,6 @@ const Login: React.FC = () => {
             >
               {submitting ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : isSignUp ? (
-                <>
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Create Account
-                </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5 mr-2" />
@@ -137,6 +108,10 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
+
+          <p className="text-xs text-gray-400 text-center mt-6">
+            Contact your administrator for account access.
+          </p>
         </div>
       </div>
     </div>

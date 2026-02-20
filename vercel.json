@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/cms/:path*",
+      "destination": "https://data.cms.gov/provider-data/api/1/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

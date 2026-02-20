@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { contactsToVCardFile, downloadVCard } from '../../lib/vcard';
 
 const ContactsList: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -220,7 +221,7 @@ const ContactsList: React.FC = () => {
         filtered = filtered.filter(contact => contact.is_donor);
       }
       if (selectedTags.includes('vip')) {
-        filtered = filtered.filter(contact => contact.title?.includes('Director') || contact.title?.includes('Chief'));
+        filtered = filtered.filter(contact => contact.is_vip);
       }
     }
 
@@ -250,6 +251,7 @@ const ContactsList: React.FC = () => {
         state: 'MN',
         zip: '55905',
         is_donor: true,
+        is_vip: true,
         notes: 'Key contact for emergency services',
         created_by: 'user-1',
         created_at: new Date().toISOString(),
@@ -268,6 +270,7 @@ const ContactsList: React.FC = () => {
         state: 'SD',
         zip: '57105',
         is_donor: false,
+        is_vip: false,
         notes: 'Oversees flight operations',
         created_by: 'user-1',
         created_at: new Date().toISOString(),
@@ -286,6 +289,7 @@ const ContactsList: React.FC = () => {
         state: 'MN',
         zip: '55905',
         is_donor: true,
+        is_vip: false,
         notes: 'Coordinates patient transfers',
         created_by: 'user-1',
         created_at: new Date().toISOString(),
@@ -304,6 +308,7 @@ const ContactsList: React.FC = () => {
         state: 'MN',
         zip: '55805',
         is_donor: false,
+        is_vip: true,
         notes: 'Decision maker for medical equipment',
         created_by: 'user-1',
         created_at: new Date().toISOString(),
@@ -313,7 +318,9 @@ const ContactsList: React.FC = () => {
   };
 
   const getContactOrganization = (contactId: string) => {
-    const contactOrg = contactOrganizations.find(co => co.contact_id === contactId && co.is_primary);
+    const contactOrg =
+      contactOrganizations.find(co => co.contact_id === contactId && co.is_primary) ||
+      contactOrganizations.find(co => co.contact_id === contactId);
     if (contactOrg) {
       const org = organizations.find(o => o.id === contactOrg.organization_id);
       return { organization: org, role: contactOrg.role };
@@ -347,6 +354,18 @@ const ContactsList: React.FC = () => {
     a.href = url;
     a.download = `contacts-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
+  };
+
+  const exportVCards = () => {
+    const vcardContent = contactsToVCardFile(
+      filteredContacts,
+      (contactId) => {
+        const orgInfo = getContactOrganization(contactId);
+        if (!orgInfo) return null;
+        return { name: orgInfo.organization?.name, role: orgInfo.role };
+      }
+    );
+    downloadVCard(vcardContent, `contacts-${format(new Date(), 'yyyy-MM-dd')}.vcf`);
   };
 
   const getInitials = (firstName: string, lastName: string) => {
@@ -413,7 +432,14 @@ const ContactsList: React.FC = () => {
               className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              Export CSV
+            </button>
+            <button
+              onClick={exportVCards}
+              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export vCards
             </button>
             <Link
               to="/contacts/import"
@@ -622,8 +648,14 @@ const ContactsList: React.FC = () => {
                   <div className="px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className={`flex-shrink-0 h-12 w-12 ${getAvatarColor(contact.first_name)} rounded-xl flex items-center justify-center text-white font-semibold shadow-lg group-hover:scale-110 transition-transform`}>
-                          {getInitials(contact.first_name, contact.last_name)}
+                        <div className="flex-shrink-0 h-12 w-12 rounded-xl shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+                          {contact.photo_url ? (
+                            <img src={contact.photo_url} alt={`${contact.first_name} ${contact.last_name}`} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className={`h-full w-full ${getAvatarColor(contact.first_name)} flex items-center justify-center text-white font-semibold`}>
+                              {getInitials(contact.first_name, contact.last_name)}
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 flex-wrap gap-1">
@@ -636,7 +668,7 @@ const ContactsList: React.FC = () => {
                                 Donor
                               </span>
                             )}
-                            {contact.title?.includes('Director') && (
+                            {contact.is_vip && (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 border border-purple-200">
                                 <Star className="w-3 h-3 mr-1" />
                                 VIP
@@ -663,7 +695,7 @@ const ContactsList: React.FC = () => {
                             <div className="flex items-center text-gray-600">
                               <Building2 className="w-4 h-4 mr-2 text-gray-400" />
                               <span className="font-medium">{orgInfo.organization?.name}</span>
-                              {orgInfo.role && (
+                              {orgInfo.role && orgInfo.role !== contact.title && (
                                 <span className="ml-2 text-gray-500">• {orgInfo.role}</span>
                               )}
                             </div>
@@ -710,8 +742,14 @@ const ContactsList: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-5 transition-opacity" />
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`h-16 w-16 ${getAvatarColor(contact.first_name)} rounded-xl flex items-center justify-center text-white font-semibold text-lg shadow-lg group-hover:scale-110 transition-transform`}>
-                      {getInitials(contact.first_name, contact.last_name)}
+                    <div className="h-16 w-16 rounded-xl shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+                      {contact.photo_url ? (
+                        <img src={contact.photo_url} alt={`${contact.first_name} ${contact.last_name}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className={`h-full w-full ${getAvatarColor(contact.first_name)} flex items-center justify-center text-white font-semibold text-lg`}>
+                          {getInitials(contact.first_name, contact.last_name)}
+                        </div>
+                      )}
                     </div>
                     <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-gray-100 rounded-lg">
                       <MoreVertical className="w-5 h-5 text-gray-500" />
@@ -754,7 +792,7 @@ const ContactsList: React.FC = () => {
                           Donor
                         </span>
                       )}
-                      {contact.title?.includes('Director') && (
+                      {contact.is_vip && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                           <Star className="w-3 h-3 mr-1" />
                           VIP

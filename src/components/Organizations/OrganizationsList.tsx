@@ -463,7 +463,12 @@ const OrganizationsList: React.FC = () => {
                             ))}
                           </div>
                           {org.type && (
-                            <p className="text-sm text-gray-600 truncate mt-0.5">{org.type}</p>
+                            <p className="text-sm text-gray-600 truncate mt-0.5">
+                              {org.type}
+                              {org.hospital_ownership && (
+                                <span className="text-gray-400"> — {org.hospital_ownership}</span>
+                              )}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -526,7 +531,14 @@ const OrganizationsList: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">
                         {org.name}
                       </h3>
-                      {org.type && <p className="text-sm text-gray-600">{org.type}</p>}
+                      {org.type && (
+                        <p className="text-sm text-gray-600">
+                          {org.type}
+                          {org.hospital_ownership && (
+                            <span className="text-gray-400"> — {org.hospital_ownership}</span>
+                          )}
+                        </p>
+                      )}
                     </div>
 
                     {org.email && (

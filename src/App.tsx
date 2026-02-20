@@ -11,6 +11,8 @@ import TouchpointsList from './components/Touchpoints/TouchpointsList';
 import TouchpointForm from './components/Touchpoints/TouchpointForm';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import Reports from './pages/Reports';
+import ContactImport from './pages/ContactImport';
 import Login from './pages/Login';
 
 function App() {
@@ -24,6 +26,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="contacts" element={<ContactsList />} />
               <Route path="contacts/new" element={<ContactForm />} />
+              <Route path="contacts/import" element={<ContactImport />} />
               <Route path="contacts/:id" element={<ContactForm />} />
               <Route path="organizations" element={<OrganizationsList />} />
               <Route path="organizations/new" element={<OrganizationForm />} />
@@ -37,6 +40,7 @@ function App() {
               <Route path="campaigns" element={<ComingSoon module="Campaigns" />} />
               <Route path="grants" element={<ComingSoon module="Grants" />} />
               <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
+              <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Route>

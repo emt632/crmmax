@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   Save,
   X,
@@ -9,12 +9,19 @@ import {
   MapPin,
   Globe,
   DollarSign,
-  Tag
+  Tag,
+  Users,
+  Mail,
+  ChevronRight,
+  Search,
+  ShieldCheck
 } from 'lucide-react';
-import type { Organization, ContactType, ContactTypeAssignment } from '../../types';
+import type { Organization, ContactType, ContactTypeAssignment, Contact } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import AddContactTypeModal from '../shared/AddContactTypeModal';
+import CMSHospitalLookupModal from './CMSHospitalLookupModal';
+import { toTitleCase, type CMSHospital } from '../../lib/cms-api';
 
 const OrganizationForm: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +35,10 @@ const OrganizationForm: React.FC = () => {
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [existingAssignments, setExistingAssignments] = useState<ContactTypeAssignment[]>([]);
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [showCMSLookup, setShowCMSLookup] = useState(false);
+  const [dupWarning, setDupWarning] = useState<{ name: string; id: string } | null>(null);
+  const [affiliatedContacts, setAffiliatedContacts] = useState<(Contact & { role?: string; department?: string; is_primary?: boolean })[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Organization>>({
     name: '',
@@ -41,7 +52,10 @@ const OrganizationForm: React.FC = () => {
     state: '',
     zip: '',
     is_donor: false,
-    notes: ''
+    notes: '',
+    cms_certification_number: '',
+    hospital_type: '',
+    hospital_ownership: ''
   });
 
   useEffect(() => {
@@ -49,6 +63,7 @@ const OrganizationForm: React.FC = () => {
     if (isEditing) {
       fetchOrganization();
       fetchTypeAssignments();
+      fetchAffiliatedContacts();
     }
   }, [id]);
 
@@ -110,6 +125,96 @@ const OrganizationForm: React.FC = () => {
     } catch {
       setExistingAssignments([]);
     }
+  };
+
+  const fetchAffiliatedContacts = async () => {
+    if (!id) return;
+    setLoadingContacts(true);
+    try {
+      const { data: links, error: linkError } = await supabase
+        .from('contact_organizations')
+        .select('*')
+        .eq('organization_id', id);
+
+      if (linkError) throw linkError;
+      if (!links || links.length === 0) {
+        setAffiliatedContacts([]);
+        return;
+      }
+
+      const contactIds = links.map(l => l.contact_id);
+      const { data: contacts, error: contactError } = await supabase
+        .from('contacts')
+        .select('*')
+        .in('id', contactIds);
+
+      if (contactError) throw contactError;
+
+      const merged = (contacts || []).map(c => {
+        const link = links.find(l => l.contact_id === c.id);
+        return { ...c, role: link?.role, department: link?.department, is_primary: link?.is_primary };
+      });
+
+      setAffiliatedContacts(merged);
+    } catch (err) {
+      console.error('Failed to fetch affiliated contacts:', err);
+      setAffiliatedContacts([]);
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  };
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      'bg-gradient-to-br from-blue-500 to-blue-600',
+      'bg-gradient-to-br from-purple-500 to-purple-600',
+      'bg-gradient-to-br from-green-500 to-green-600',
+      'bg-gradient-to-br from-yellow-500 to-yellow-600',
+      'bg-gradient-to-br from-red-500 to-red-600',
+      'bg-gradient-to-br from-indigo-500 to-indigo-600',
+      'bg-gradient-to-br from-pink-500 to-pink-600'
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  const handleCMSSelect = async (hospital: CMSHospital) => {
+    setDupWarning(null);
+
+    // Check for existing org with same CMS certification number
+    try {
+      const { data: existing } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('cms_certification_number', hospital.facility_id)
+        .maybeSingle();
+
+      if (existing) {
+        setDupWarning({ name: existing.name, id: existing.id });
+        return;
+      }
+    } catch {
+      // Continue with fill if check fails
+    }
+
+    // Auto-fill form
+    setFormData(prev => ({
+      ...prev,
+      name: toTitleCase(hospital.facility_name),
+      address_line1: toTitleCase(hospital.address),
+      city: toTitleCase(hospital.citytown),
+      state: hospital.state,
+      zip: hospital.zip_code,
+      phone: hospital.telephone_number,
+      type: hospital.hospital_type,
+      cms_certification_number: hospital.facility_id,
+      hospital_type: hospital.hospital_type,
+      hospital_ownership: hospital.hospital_ownership,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -215,14 +320,56 @@ const OrganizationForm: React.FC = () => {
               {isEditing ? 'Update organization information' : 'Add a new organization to your CRM'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/organizations')}
-            className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setShowCMSLookup(true)}
+              className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Search CMS Hospitals
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/organizations')}
+              className="p-3 bg-white/20 backdrop-blur hover:bg-white/30 rounded-xl transition-all duration-200"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
+
+        {/* Duplicate Warning */}
+        {dupWarning && (
+          <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <Building2 className="w-5 h-5 text-yellow-600 mr-3" />
+              <div>
+                <p className="text-sm font-medium text-yellow-900">
+                  This hospital already exists
+                </p>
+                <p className="text-sm text-yellow-700">
+                  "{dupWarning.name}" is already in your CRM.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link
+                to={`/organizations/${dupWarning.id}`}
+                className="px-3 py-1.5 text-sm font-medium text-yellow-800 bg-yellow-100 hover:bg-yellow-200 rounded-lg transition-colors"
+              >
+                View It
+              </Link>
+              <button
+                type="button"
+                onClick={() => setDupWarning(null)}
+                className="p-1 text-yellow-400 hover:text-yellow-600 hover:bg-yellow-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Basic Information */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
@@ -234,7 +381,15 @@ const OrganizationForm: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">Organization Name *</label>
+                {formData.cms_certification_number && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    CMS Verified
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
@@ -242,6 +397,9 @@ const OrganizationForm: React.FC = () => {
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 transition-all duration-200 hover:border-gray-300"
               />
+              {formData.hospital_ownership && (
+                <p className="text-xs text-gray-500 mt-1">{formData.hospital_type} — {formData.hospital_ownership}</p>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
@@ -427,6 +585,98 @@ const OrganizationForm: React.FC = () => {
           />
         </div>
 
+        {/* Affiliated Contacts - Only show if editing */}
+        {isEditing && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center mb-6">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl mr-3">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Affiliated Contacts
+                {affiliatedContacts.length > 0 && (
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({affiliatedContacts.length})
+                  </span>
+                )}
+              </h2>
+            </div>
+
+            {loadingContacts ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
+              </div>
+            ) : affiliatedContacts.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No contacts affiliated with this organization yet.</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Add this organization as an affiliation from a contact's edit page.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {affiliatedContacts.map((contact) => (
+                  <Link
+                    key={contact.id}
+                    to={`/contacts/${contact.id}`}
+                    className="flex items-center justify-between py-4 px-2 -mx-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all group"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow group-hover:scale-110 transition-transform">
+                        {contact.photo_url ? (
+                          <img
+                            src={contact.photo_url}
+                            alt={`${contact.first_name} ${contact.last_name}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className={`h-full w-full ${getAvatarColor(contact.first_name)} flex items-center justify-center text-white font-semibold text-sm`}>
+                            {getInitials(contact.first_name, contact.last_name)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {contact.first_name} {contact.last_name}
+                        </p>
+                        <div className="flex items-center space-x-3 mt-0.5">
+                          {contact.role && (
+                            <span className="text-xs text-gray-600">{contact.role}</span>
+                          )}
+                          {contact.department && (
+                            <span className="text-xs text-gray-500">| {contact.department}</span>
+                          )}
+                          {!contact.role && contact.title && (
+                            <span className="text-xs text-gray-600">{contact.title}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="hidden md:flex items-center space-x-4 text-xs text-gray-500">
+                        {contact.email_work && (
+                          <span className="flex items-center">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {contact.email_work}
+                          </span>
+                        )}
+                        {(contact.phone_mobile || contact.phone_office) && (
+                          <span className="flex items-center">
+                            <Phone className="w-3 h-3 mr-1" />
+                            {contact.phone_mobile || contact.phone_office}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Form Actions */}
         <div className="flex justify-end space-x-4 pt-6">
           <button
@@ -463,6 +713,12 @@ const OrganizationForm: React.FC = () => {
           setContactTypes(prev => [...prev, newType]);
           setSelectedTypeIds(prev => [...prev, newType.id]);
         }}
+      />
+
+      <CMSHospitalLookupModal
+        isOpen={showCMSLookup}
+        onClose={() => setShowCMSLookup(false)}
+        onSelect={handleCMSSelect}
       />
     </div>
   );

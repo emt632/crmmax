@@ -71,10 +71,10 @@ const TouchpointForm: React.FC = () => {
       setContacts(data || []);
     } catch {
       setContacts([
-        { id: '1', first_name: 'Sarah', last_name: 'Mitchell', is_donor: true, created_by: 'user-1', created_at: '', updated_at: '' },
-        { id: '2', first_name: 'John', last_name: 'Anderson', is_donor: false, created_by: 'user-1', created_at: '', updated_at: '' },
-        { id: '3', first_name: 'Emily', last_name: 'Johnson', is_donor: true, created_by: 'user-1', created_at: '', updated_at: '' },
-        { id: '4', first_name: 'Michael', last_name: 'Brown', is_donor: false, created_by: 'user-1', created_at: '', updated_at: '' },
+        { id: '1', first_name: 'Sarah', last_name: 'Mitchell', is_donor: true, is_vip: true, created_by: 'user-1', created_at: '', updated_at: '' },
+        { id: '2', first_name: 'John', last_name: 'Anderson', is_donor: false, is_vip: false, created_by: 'user-1', created_at: '', updated_at: '' },
+        { id: '3', first_name: 'Emily', last_name: 'Johnson', is_donor: true, is_vip: false, created_by: 'user-1', created_at: '', updated_at: '' },
+        { id: '4', first_name: 'Michael', last_name: 'Brown', is_donor: false, is_vip: true, created_by: 'user-1', created_at: '', updated_at: '' },
       ]);
     }
   };

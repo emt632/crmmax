@@ -13,6 +13,7 @@ import {
   Phone,
   ClipboardList,
   Settings,
+  FileBarChart,
   LogOut,
   ChevronDown,
   ChevronRight
@@ -21,9 +22,10 @@ import {
 interface SidebarProps {
   onSignOut?: () => void;
   userEmail?: string;
+  userName?: string | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedModules, setExpandedModules] = useState<string[]>(['crm']);
 
@@ -46,6 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail }) => {
         { path: '/touchpoints', label: 'Touchpoints', icon: Phone },
         { path: '/ride-alongs', label: 'Ride-Alongs', icon: Plane },
         { path: '/pr-requests', label: 'PR Requests', icon: Megaphone },
+        { path: '/reports', label: 'Reports', icon: FileBarChart },
       ]
     },
     {
@@ -148,9 +151,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail }) => {
       </nav>
 
       <div className="p-6 border-t border-gray-100 bg-gradient-to-br from-gray-50 to-white">
-        {userEmail && (
+        {(userName || userEmail) && (
           <div className="px-4 py-2 mb-2">
-            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+            {userName && <p className="text-sm font-medium text-gray-700 truncate">{userName}</p>}
+            {userEmail && <p className="text-xs text-gray-500 truncate">{userEmail}</p>}
           </div>
         )}
         <NavLink
