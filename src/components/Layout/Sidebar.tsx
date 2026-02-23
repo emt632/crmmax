@@ -57,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
         <NavLink
           to="/"
           end
+          onClick={() => setIsMobileMenuOpen(false)}
           className={({ isActive }) =>
             `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
               isActive
