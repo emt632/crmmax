@@ -19,6 +19,7 @@ import {
   Package,
   Users,
   Briefcase,
+  Handshake,
   Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -41,6 +42,7 @@ const contactTypeIcons: Record<string, LucideIcon> = {
   vendor: Package,
   association: Users,
   'industry contact': Briefcase,
+  'strategic partner': Handshake,
 };
 
 const getTypeIcon = (name: string): LucideIcon => {
