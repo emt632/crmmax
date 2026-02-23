@@ -41,6 +41,12 @@ const SYSTEM_PROMPT = `You are a contact information extractor. Given an email s
   "organization_email": "string",
   "organization_website": "string"
 }
+IMPORTANT casing rules:
+- Convert ALL CAPS text to proper Title Case (e.g. "JOHN SMITH" → "John Smith", "MINNEAPOLIS" → "Minneapolis", "MAIN STREET" → "Main Street").
+- Preserve well-known acronyms and abbreviations in uppercase: CEO, CFO, COO, CTO, VP, EVP, SVP, MD, RN, PhD, LLC, LLP, Inc, Jr, Sr, II, III, IV, SE, NE, NW, SW, STE, APT, FL, PO.
+- Preserve state abbreviations as 2-letter uppercase (MN, CA, DC, etc.).
+- Keep email addresses and websites exactly as-is (lowercase).
+- If the organization name is a well-known acronym or brand with intentional casing, preserve it.
 Return ONLY valid JSON, no markdown or explanation.`;
 
 const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
