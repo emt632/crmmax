@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-200"
+          className="lg:hidden p-3 hover:bg-gray-100 rounded-xl transition-all duration-200"
         >
           <X className="w-5 h-5" />
         </button>

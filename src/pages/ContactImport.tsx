@@ -203,23 +203,23 @@ const ContactImport: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
+      <div className="bg-blue-600 rounded-xl p-5 sm:p-8 text-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <Upload className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <Upload className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Import Contacts
             </h1>
-            <p className="mt-2 text-blue-100">
+            <p className="mt-1 sm:mt-2 text-blue-100 text-sm">
               Import contacts from vCard (.vcf) files
             </p>
           </div>
           <button
             onClick={() => navigate('/contacts')}
-            className="inline-flex items-center px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
+            className="inline-flex items-center px-3 sm:px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/30 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Contacts
+            <ArrowLeft className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Contacts</span>
           </button>
         </div>
       </div>
@@ -257,7 +257,7 @@ const ContactImport: React.FC = () => {
       {/* Drag & Drop Zone (show when no contacts parsed or after import) */}
       {parsedContacts.length === 0 && (
         <div
-          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all ${
+          className={`border-2 border-dashed rounded-xl p-6 sm:p-12 text-center transition-all ${
             dragActive
               ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 bg-gray-50 hover:border-gray-400'
@@ -297,37 +297,37 @@ const ContactImport: React.FC = () => {
       {/* Preview Table */}
       {parsedContacts.length > 0 && !importResult && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center">
                 <Users className="w-5 h-5 text-gray-600 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                   {parsedContacts.length} Contact{parsedContacts.length !== 1 ? 's' : ''} Found
                 </h2>
                 <span className="ml-3 text-sm text-gray-500">
                   {selectedCount} selected
                 </span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <button
                   onClick={() => {
                     setParsedContacts([]);
                     setParseError(null);
                   }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                   Clear
                 </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-gray-700 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors hidden sm:inline-flex"
                 >
-                  Add More Files
+                  Add More
                 </button>
                 <button
                   onClick={handleImport}
                   disabled={importing || selectedCount === 0}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                  className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
                 >
                   {importing ? (
                     <>
@@ -336,8 +336,8 @@ const ContactImport: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Import {selectedCount} Contact{selectedCount !== 1 ? 's' : ''}
+                      <Check className="w-4 h-4 mr-1 sm:mr-2" />
+                      Import {selectedCount}
                     </>
                   )}
                 </button>
@@ -359,7 +359,7 @@ const ContactImport: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left">
+                  <th className="px-2 sm:px-4 py-3 text-left">
                     <input
                       type="checkbox"
                       checked={parsedContacts.every(c => c.selected)}
@@ -367,21 +367,21 @@ const ContactImport: React.FC = () => {
                       className="rounded border-gray-300"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">First Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">First</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Title</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Email</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Phone</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Organization</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">City</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">State</th>
+                  <th className="px-2 sm:px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {parsedContacts.map((contact, index) => (
                   <tr key={index} className={`hover:bg-gray-50 ${!contact.selected ? 'opacity-50' : ''}`}>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3">
                       <input
                         type="checkbox"
                         checked={contact.selected}
@@ -389,8 +389,17 @@ const ContactImport: React.FC = () => {
                         className="rounded border-gray-300"
                       />
                     </td>
-                    {(['first_name', 'last_name', 'title', 'email_work', 'phone_mobile', 'org_name', 'city', 'state'] as const).map(field => (
-                      <td key={field} className="px-4 py-3">
+                    {([
+                      { field: 'first_name' as const, hide: '' },
+                      { field: 'last_name' as const, hide: '' },
+                      { field: 'title' as const, hide: 'hidden sm:table-cell' },
+                      { field: 'email_work' as const, hide: 'hidden md:table-cell' },
+                      { field: 'phone_mobile' as const, hide: 'hidden sm:table-cell' },
+                      { field: 'org_name' as const, hide: 'hidden lg:table-cell' },
+                      { field: 'city' as const, hide: 'hidden lg:table-cell' },
+                      { field: 'state' as const, hide: 'hidden lg:table-cell' },
+                    ]).map(({ field, hide }) => (
+                      <td key={field} className={`px-2 sm:px-4 py-2 sm:py-3 ${hide}`}>
                         {editingCell?.row === index && editingCell?.field === field ? (
                           <input
                             type="text"
@@ -404,17 +413,17 @@ const ContactImport: React.FC = () => {
                         ) : (
                           <span
                             onClick={() => setEditingCell({ row: index, field })}
-                            className="text-sm text-gray-900 cursor-text hover:bg-blue-50 px-1 py-0.5 rounded"
+                            className="text-sm text-gray-900 cursor-text hover:bg-blue-50 px-1 py-0.5 rounded truncate max-w-[120px] inline-block"
                           >
                             {(contact as any)[field] || <span className="text-gray-300">—</span>}
                           </span>
                         )}
                       </td>
                     ))}
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3">
                       <button
                         onClick={() => removeContact(index)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

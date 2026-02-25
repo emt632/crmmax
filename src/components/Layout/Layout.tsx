@@ -21,7 +21,7 @@ const Layout: React.FC = () => {
       <Sidebar onSignOut={signOut} userEmail={user?.email} userName={profile?.full_name} />
       <main className="flex-1 overflow-y-auto">
         <ImpersonationBanner />
-        <div className="p-6 pt-20 lg:p-10 lg:pt-10 max-w-[1600px] mx-auto">
+        <div className="p-4 pt-16 sm:p-6 sm:pt-16 lg:p-10 lg:pt-10 max-w-[1600px] mx-auto">
           <Outlet />
         </div>
       </main>

@@ -342,23 +342,21 @@ const TeamActivity: React.FC = () => {
         </div>
 
         {/* Date range */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-            />
-            <span className="text-gray-400">to</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-            />
-          </div>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <Calendar className="w-4 h-4 text-gray-400 hidden sm:block" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="px-2 sm:px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+          />
+          <span className="text-gray-400 text-sm">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="px-2 sm:px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+          />
         </div>
       </div>
 
@@ -382,7 +380,7 @@ const TeamActivity: React.FC = () => {
                 <card.icon className={`w-5 h-5 ${card.iconColor}`} />
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-3xl font-bold text-gray-900">{card.count}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{card.count}</p>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${drillDown === card.type ? 'rotate-180' : ''}`} />
               </div>
             </div>
@@ -416,8 +414,8 @@ const TeamActivity: React.FC = () => {
                     <p className="text-sm font-medium text-gray-900 truncate">{r.label}</p>
                     {r.sublabel && <p className="text-xs text-gray-500 truncate">{r.sublabel}</p>}
                   </div>
-                  <div className="flex items-center gap-4 flex-shrink-0 ml-4">
-                    <span className="text-xs text-gray-500">{r.user}</span>
+                  <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 ml-3 sm:ml-4">
+                    <span className="text-xs text-gray-500 hidden sm:inline">{r.user}</span>
                     <span className="text-xs text-gray-400">{format(new Date(r.date), 'MMM d')}</span>
                     <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                   </div>
@@ -443,18 +441,18 @@ const TeamActivity: React.FC = () => {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   {[
-                    { key: 'name' as SortKey, label: 'Name' },
-                    { key: 'role' as SortKey, label: 'Role' },
-                    { key: 'daysSinceLogin' as SortKey, label: 'Last Login' },
-                    { key: 'contactsCreated' as SortKey, label: 'Contacts' },
-                    { key: 'touchpoints' as SortKey, label: 'Touchpoints' },
-                    { key: 'openFollowUps' as SortKey, label: 'Open F/U' },
-                    { key: 'closedFollowUps' as SortKey, label: 'Closed F/U' },
+                    { key: 'name' as SortKey, label: 'Name', hide: '' },
+                    { key: 'role' as SortKey, label: 'Role', hide: 'hidden sm:table-cell' },
+                    { key: 'daysSinceLogin' as SortKey, label: 'Last Login', hide: 'hidden md:table-cell' },
+                    { key: 'contactsCreated' as SortKey, label: 'Contacts', hide: '' },
+                    { key: 'touchpoints' as SortKey, label: 'Touchpoints', hide: '' },
+                    { key: 'openFollowUps' as SortKey, label: 'Open F/U', hide: 'hidden sm:table-cell' },
+                    { key: 'closedFollowUps' as SortKey, label: 'Closed F/U', hide: 'hidden sm:table-cell' },
                   ].map(col => (
                     <th
                       key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none whitespace-nowrap"
+                      className={`px-3 sm:px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none whitespace-nowrap ${col.hide}`}
                     >
                       <span className="inline-flex items-center gap-1">
                         {col.label}
@@ -467,8 +465,8 @@ const TeamActivity: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {sortedStats.map(u => (
                   <tr key={u.userId} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{u.name}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 sm:px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{u.name}</td>
+                    <td className="px-3 sm:px-4 py-3 hidden sm:table-cell">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                         u.role === 'admin' ? 'bg-blue-100 text-blue-700'
                         : u.role === 'manager' ? 'bg-purple-100 text-purple-700'
@@ -477,7 +475,7 @@ const TeamActivity: React.FC = () => {
                         {u.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 sm:px-4 py-3 whitespace-nowrap hidden md:table-cell">
                       {u.lastLogin ? (
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">{format(new Date(u.lastLogin), 'MMM d, yyyy')}</span>
@@ -489,14 +487,14 @@ const TeamActivity: React.FC = () => {
                         <span className="text-gray-400 italic">Never</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center font-semibold text-gray-900">{u.contactsCreated}</td>
-                    <td className="px-4 py-3 text-center font-semibold text-gray-900">{u.touchpoints}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 sm:px-4 py-3 text-center font-semibold text-gray-900">{u.contactsCreated}</td>
+                    <td className="px-3 sm:px-4 py-3 text-center font-semibold text-gray-900">{u.touchpoints}</td>
+                    <td className="px-3 sm:px-4 py-3 text-center hidden sm:table-cell">
                       <span className={`font-semibold ${u.openFollowUps > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
                         {u.openFollowUps}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 sm:px-4 py-3 text-center hidden sm:table-cell">
                       <span className={`font-semibold ${u.closedFollowUps > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                         {u.closedFollowUps}
                       </span>
@@ -511,12 +509,12 @@ const TeamActivity: React.FC = () => {
 
       {/* Activity trend chart */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Touchpoints Over Time</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Touchpoints Over Time</h2>
           </div>
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <div className="flex bg-gray-100 rounded-lg p-0.5 self-start sm:self-auto">
             {(['day', 'week', 'month'] as Period[]).map(p => (
               <button
                 key={p}
