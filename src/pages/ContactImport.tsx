@@ -107,9 +107,41 @@ const ContactImport: React.FC = () => {
     let failed = 0;
 
     const userId = user!.id;
+    const now = new Date().toISOString();
+
+    // Build org_name → org_id map for all unique org names
+    const orgMap = new Map<string, string>();
+    const uniqueOrgNames = [...new Set(
+      selected.map(c => c.org_name?.trim()).filter((n): n is string => !!n)
+    )];
+
+    for (const orgName of uniqueOrgNames) {
+      // Check if org already exists
+      const { data: existing } = await supabase
+        .from('organizations')
+        .select('id')
+        .ilike('name', orgName)
+        .limit(1)
+        .single();
+
+      if (existing) {
+        orgMap.set(orgName.toLowerCase(), existing.id);
+      } else {
+        // Create new org
+        const { data: newOrg } = await supabase
+          .from('organizations')
+          .insert({ name: orgName, created_by: userId, created_at: now, updated_at: now })
+          .select('id')
+          .single();
+        if (newOrg) {
+          orgMap.set(orgName.toLowerCase(), newOrg.id);
+        }
+      }
+    }
 
     for (let i = 0; i < selected.length; i += BATCH_SIZE) {
-      const batch = selected.slice(i, i + BATCH_SIZE).map(c => ({
+      const batchSource = selected.slice(i, i + BATCH_SIZE);
+      const batch = batchSource.map(c => ({
         first_name: c.first_name,
         last_name: c.last_name,
         title: c.title || null,
@@ -127,15 +159,38 @@ const ContactImport: React.FC = () => {
         is_donor: false,
         is_vip: false,
         created_by: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       }));
 
       const { data, error } = await supabase.from('contacts').insert(batch).select();
       if (error) {
         failed += batch.length;
-      } else {
-        success += data?.length || 0;
+      } else if (data) {
+        success += data.length;
+
+        // Link contacts to their organizations
+        const links = data
+          .map((contact, idx) => {
+            const orgName = batchSource[idx].org_name?.trim();
+            if (!orgName) return null;
+            const orgId = orgMap.get(orgName.toLowerCase());
+            if (!orgId) return null;
+            return {
+              contact_id: contact.id,
+              organization_id: orgId,
+              role: batchSource[idx].title || null,
+              is_primary: true,
+              created_by: userId,
+              created_at: now,
+              updated_at: now,
+            };
+          })
+          .filter((l): l is NonNullable<typeof l> => l !== null);
+
+        if (links.length > 0) {
+          await supabase.from('contact_organizations').insert(links);
+        }
       }
     }
 
@@ -348,8 +403,8 @@ const ContactImport: React.FC = () => {
                           />
                         ) : (
                           <span
-                            onClick={() => field !== 'org_name' && setEditingCell({ row: index, field })}
-                            className={`text-sm text-gray-900 ${field !== 'org_name' ? 'cursor-text hover:bg-blue-50 px-1 py-0.5 rounded' : ''}`}
+                            onClick={() => setEditingCell({ row: index, field })}
+                            className="text-sm text-gray-900 cursor-text hover:bg-blue-50 px-1 py-0.5 rounded"
                           >
                             {(contact as any)[field] || <span className="text-gray-300">—</span>}
                           </span>
