@@ -83,7 +83,12 @@ function parseSingleVCard(lines: string[]): ParsedContact | null {
         break;
       }
       case 'ORG': {
-        contact.org_name = value.split(';')[0];
+        const orgParts = value.split(';');
+        contact.org_name = orgParts[0];
+        // Use second ORG component as title fallback (department/role)
+        if (!contact.title && orgParts[1]?.trim()) {
+          contact.title = orgParts[1].trim();
+        }
         break;
       }
       case 'TEL': {

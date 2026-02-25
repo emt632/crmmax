@@ -198,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-72 lg:h-screen lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm">
+      <div className="hidden lg:flex lg:flex-col lg:w-72 lg:h-dvh lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm">
         <NavContent />
       </div>
     </>

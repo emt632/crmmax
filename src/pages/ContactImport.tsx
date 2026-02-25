@@ -369,10 +369,10 @@ const ContactImport: React.FC = () => {
                   </th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">First</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Title</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Email</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Org</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Email</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Phone</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Organization</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">City</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">State</th>
                   <th className="px-2 sm:px-4 py-3"></th>
@@ -392,10 +392,10 @@ const ContactImport: React.FC = () => {
                     {([
                       { field: 'first_name' as const, hide: '' },
                       { field: 'last_name' as const, hide: '' },
-                      { field: 'title' as const, hide: 'hidden sm:table-cell' },
-                      { field: 'email_work' as const, hide: 'hidden md:table-cell' },
+                      { field: 'title' as const, hide: '' },
+                      { field: 'org_name' as const, hide: '' },
+                      { field: 'email_work' as const, hide: 'hidden sm:table-cell' },
                       { field: 'phone_mobile' as const, hide: 'hidden sm:table-cell' },
-                      { field: 'org_name' as const, hide: 'hidden lg:table-cell' },
                       { field: 'city' as const, hide: 'hidden lg:table-cell' },
                       { field: 'state' as const, hide: 'hidden lg:table-cell' },
                     ]).map(({ field, hide }) => (

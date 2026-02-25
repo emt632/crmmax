@@ -17,7 +17,7 @@ const Layout: React.FC = () => {
   const [fabOpen, setFabOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-dvh bg-gray-50">
       <Sidebar onSignOut={signOut} userEmail={user?.email} userName={profile?.full_name} />
       <main className="flex-1 overflow-y-auto">
         <ImpersonationBanner />

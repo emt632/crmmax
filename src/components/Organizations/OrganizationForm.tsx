@@ -225,8 +225,15 @@ const OrganizationForm: React.FC = () => {
     try {
       const userId = user!.id;
 
+      // Auto-prepend https:// to website if user entered a bare domain
+      let website = formData.website?.trim() || '';
+      if (website && !/^https?:\/\//i.test(website)) {
+        website = `https://${website}`;
+      }
+
       const orgData = {
         ...formData,
+        website: website || null,
         created_by: isEditing ? formData.created_by : userId,
         updated_at: new Date().toISOString()
       };
@@ -407,10 +414,10 @@ const OrganizationForm: React.FC = () => {
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="url"
+                  type="text"
                   value={formData.website || ''}
                   onChange={(e) => handleInputChange('website', e.target.value)}
-                  placeholder="https://..."
+                  placeholder="lifelinkiii.com"
                   className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 transition-all duration-200 hover:border-gray-300"
                 />
               </div>
