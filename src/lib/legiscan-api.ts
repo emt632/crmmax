@@ -400,3 +400,8 @@ export async function getInitiativeOptions(): Promise<string[]> {
   const val = await getAdvoLinkSetting('initiative_options');
   return Array.isArray(val) ? val : [];
 }
+
+export async function getLocationOptions(): Promise<string[]> {
+  const val = await getAdvoLinkSetting('location_options');
+  return Array.isArray(val) ? val : [];
+}

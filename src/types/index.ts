@@ -503,6 +503,8 @@ export interface GAEngagement {
   entity_name?: string;
   initiative?: string;
   committee_office_id?: string;
+  meeting_location?: string;
+  meeting_location_detail?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

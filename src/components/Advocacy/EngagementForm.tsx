@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { GAEngagementType, LegiscanLegislator, LegislativeOffice, LegislativeOfficeStaff } from '../../types';
 import { GA_ENGAGEMENT_TYPE_LABELS, GA_ASSOCIATION_OPTIONS, US_STATES } from '../../lib/bill-format';
-import { getLegislators, getOurStates, getAssociationOptions, getInitiativeOptions, setAdvoLinkSetting } from '../../lib/legiscan-api';
+import { getLegislators, getOurStates, getAssociationOptions, getInitiativeOptions, getLocationOptions, setAdvoLinkSetting } from '../../lib/legiscan-api';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import type { MultiSelectOption } from './MultiSelectDropdown';
 import QuickAddLegStaffModal from './QuickAddLegStaffModal';
@@ -150,6 +150,8 @@ interface EngagementFormData {
   association_name: string;
   entity_name: string;
   initiative: string;
+  meeting_location: string;
+  meeting_location_detail: string;
   follow_up_required: boolean;
   follow_up_date: string;
   follow_up_notes: string;
@@ -188,6 +190,8 @@ const emptyForm: EngagementFormData = {
   association_name: '',
   entity_name: '',
   initiative: '',
+  meeting_location: '',
+  meeting_location_detail: '',
   follow_up_required: false,
   follow_up_date: '',
   follow_up_notes: '',
@@ -264,6 +268,7 @@ const EngagementForm: React.FC = () => {
   const [ourStates, setOurStates] = useState<string[]>([]);
   const [associationOptions, setAssociationOptions] = useState<string[]>([]);
   const [initiativeOptions, setInitiativeOptions] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
 
   // Modal state
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -294,6 +299,7 @@ const EngagementForm: React.FC = () => {
     getOurStates().then(setOurStates);
     getAssociationOptions().then((opts) => setAssociationOptions(opts.length > 0 ? opts : GA_ASSOCIATION_OPTIONS));
     getInitiativeOptions().then(setInitiativeOptions);
+    getLocationOptions().then(setLocationOptions);
   }, [id]);
 
   // Fetch legislators when jurisdiction changes (for legislator_office type)
@@ -492,6 +498,8 @@ const EngagementForm: React.FC = () => {
       association_name: data.association_name || '',
       entity_name: data.entity_name || '',
       initiative: data.initiative || '',
+      meeting_location: data.meeting_location || '',
+      meeting_location_detail: data.meeting_location_detail || '',
       follow_up_required: data.follow_up_required || false,
       follow_up_date: data.follow_up_date || '',
       follow_up_notes: data.follow_up_notes || '',
@@ -553,6 +561,8 @@ const EngagementForm: React.FC = () => {
       association_name: formData.type === 'ga_committee' ? formData.association_name || null : null,
       entity_name: formData.type === 'federal_state_entity' ? formData.entity_name || null : null,
       initiative: formData.initiative || null,
+      meeting_location: formData.meeting_location || null,
+      meeting_location_detail: formData.meeting_location_detail || null,
       committee_office_id: formData.type === 'committee_meeting' ? selectedCommitteeOfficeId || null : null,
       follow_up_required: formData.follow_up_required,
       follow_up_date: formData.follow_up_required ? formData.follow_up_date || null : null,
@@ -712,6 +722,59 @@ const EngagementForm: React.FC = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Meeting Location */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2">
+              <div>
+                <label className={labelClass}>Meeting Location</label>
+                <select
+                  value={formData.meeting_location}
+                  onChange={(e) => {
+                    handleInputChange('meeting_location', e.target.value);
+                    if (e.target.value !== 'other') handleInputChange('meeting_location_detail', '');
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Select...</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="in_person">In-Person</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              {formData.meeting_location === 'other' && (
+                <div className="md:col-span-3">
+                  <label className={labelClass}>Location</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.meeting_location_detail}
+                      onChange={(e) => handleInputChange('meeting_location_detail', e.target.value)}
+                      list="location-suggestions"
+                      placeholder="Type or select a location..."
+                      className={inputClass}
+                      onBlur={async () => {
+                        const val = formData.meeting_location_detail.trim();
+                        if (val && !locationOptions.includes(val) && user) {
+                          const updated = [...locationOptions, val].sort();
+                          setLocationOptions(updated);
+                          await setAdvoLinkSetting('location_options', updated, user.id);
+                        }
+                      }}
+                    />
+                    <datalist id="location-suggestions">
+                      {locationOptions.map((loc) => (
+                        <option key={loc} value={loc} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              )}
+              {formData.meeting_location === 'in_person' && (formData.type === 'legislator_office' || formData.type === 'committee_meeting') && (
+                <div className="md:col-span-3 flex items-end">
+                  <p className="text-xs text-gray-400 italic pb-2">Legislator/committee office assumed</p>
+                </div>
+              )}
             </div>
           </div>
 
