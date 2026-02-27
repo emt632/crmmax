@@ -105,39 +105,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Track whether initial hydration is done — never show loading spinner after this
+  const initializedRef = React.useRef(false);
+
   useEffect(() => {
     // Hydrate from existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).then(() => setLoading(false));
-        // Track last login on session hydrate
+        fetchProfile(session.user.id).then(() => {
+          initializedRef.current = true;
+          setLoading(false);
+        });
         supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
       } else {
+        initializedRef.current = true;
         setLoading(false);
       }
     });
 
-    // Listen for auth changes
+    // Listen for auth changes (token refresh, sign-in, sign-out, etc.)
+    // IMPORTANT: Never set loading=true after initial hydration — doing so
+    // unmounts ProtectedRoute's children and destroys in-progress form state
+    // (e.g. when switching macOS desktops and returning).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Only show loading spinner on initial sign-in, NOT on token refresh.
-        // Token refresh (e.g. tab regain focus) should silently update the profile
-        // without unmounting the entire app, which would lose form state.
-        if (event === 'SIGNED_IN') {
+        if (!initializedRef.current) {
+          // First-ever auth event before getSession resolved
           setLoading(true);
-          fetchProfile(session.user.id).then(() => setLoading(false));
-          supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
+          fetchProfile(session.user.id).then(() => {
+            initializedRef.current = true;
+            setLoading(false);
+          });
         } else {
-          // TOKEN_REFRESHED, USER_UPDATED, etc. — refresh profile silently
+          // Already initialized — silently refresh profile, never touch loading
           fetchProfile(session.user.id);
+        }
+        if (event === 'SIGNED_IN') {
+          supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
         }
       } else {
         setProfile(null);
         setSubordinateIds([]);
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+        }
         setLoading(false);
       }
     });
