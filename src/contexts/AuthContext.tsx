@@ -124,11 +124,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setLoading(true);
-        fetchProfile(session.user.id).then(() => setLoading(false));
-        // Track last login on sign-in
+        // Only show loading spinner on initial sign-in, NOT on token refresh.
+        // Token refresh (e.g. tab regain focus) should silently update the profile
+        // without unmounting the entire app, which would lose form state.
         if (event === 'SIGNED_IN') {
+          setLoading(true);
+          fetchProfile(session.user.id).then(() => setLoading(false));
           supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
+        } else {
+          // TOKEN_REFRESHED, USER_UPDATED, etc. — refresh profile silently
+          fetchProfile(session.user.id);
         }
       } else {
         setProfile(null);
