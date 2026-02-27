@@ -3,6 +3,8 @@ import type { User, Session } from '@supabase/supabase-js';
 import type { UserProfile } from '../types';
 import { supabase } from '../lib/supabase';
 
+type ModuleName = 'crm' | 'philanthropy' | 'advoLink';
+
 interface AuthContextType {
   // Real identity (always the logged-in user)
   user: User | null;
@@ -15,6 +17,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  hasModule: (module: ModuleName) => boolean;
 
   // Impersonation
   isImpersonating: boolean;
@@ -193,9 +196,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ? impersonatedProfile?.role === 'admin'
     : isAdmin;
 
+  const hasModule = (module: ModuleName): boolean => {
+    if (effectiveIsAdmin) return true;
+    return effectiveProfile?.module_access?.[module] ?? false;
+  };
+
   const value = useMemo(() => ({
     user, profile, session, loading, isAdmin, isManager, subordinateIds,
-    signIn, signOut, refreshProfile,
+    signIn, signOut, refreshProfile, hasModule,
     // Impersonation
     isImpersonating, impersonatedProfile,
     startImpersonating, stopImpersonating,

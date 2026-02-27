@@ -19,11 +19,15 @@ import {
   ChevronRight,
   User as UserIcon,
   KeyRound,
-  Eye
+  Eye,
+  Landmark,
+  Shield,
 } from 'lucide-react';
-import type { ContactType, UserProfile, UserRole } from '../types';
+import type { ContactType, UserProfile, UserRole, ModuleAccess } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getOurStates, getAssociationOptions, getInitiativeOptions, setAdvoLinkSetting } from '../lib/legiscan-api';
+import { US_STATES, GA_ASSOCIATION_OPTIONS } from '../lib/bill-format';
 import AddContactTypeModal from '../components/shared/AddContactTypeModal';
 import InviteUserModal from '../components/shared/InviteUserModal';
 
@@ -89,6 +93,16 @@ const Settings: React.FC = () => {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Module access state
+  const [moduleAccessMap, setModuleAccessMap] = useState<Record<string, ModuleAccess>>({});
+
+  // AdvoLink settings state
+  const [ourStates, setOurStates] = useState<string[]>([]);
+  const [associationOpts, setAssociationOpts] = useState<string[]>([]);
+  const [initiativeOpts, setInitiativeOpts] = useState<string[]>([]);
+  const [newAssociation, setNewAssociation] = useState('');
+  const [newInitiative, setNewInitiative] = useState('');
+
   useEffect(() => {
     fetchContactTypes();
     fetchUsageCounts();
@@ -97,6 +111,9 @@ const Settings: React.FC = () => {
   useEffect(() => {
     if (isAdmin && activeTab === 'admin') {
       fetchAllUsers();
+      getOurStates().then(setOurStates);
+      getAssociationOptions().then((opts) => setAssociationOpts(opts.length > 0 ? opts : GA_ASSOCIATION_OPTIONS));
+      getInitiativeOptions().then(setInitiativeOpts);
     }
   }, [isAdmin, activeTab]);
 
@@ -144,7 +161,15 @@ const Settings: React.FC = () => {
         .order('created_at');
 
       if (error) throw error;
-      setAllUsers((data || []) as UserProfile[]);
+      const users = (data || []) as UserProfile[];
+      setAllUsers(users);
+
+      // Build module access map
+      const maMap: Record<string, ModuleAccess> = {};
+      users.forEach((u) => {
+        maMap[u.id] = u.module_access || { crm: true, philanthropy: false, advoLink: false };
+      });
+      setModuleAccessMap(maMap);
     } catch {
       setAllUsers([]);
     } finally {
@@ -349,6 +374,63 @@ const Settings: React.FC = () => {
       setEditingReportsToUserId(null);
     } catch (err) {
       console.error('Failed to update reports_to:', err);
+    }
+  };
+
+  // Module access toggle
+  const toggleModuleAccess = async (userId: string, module: keyof ModuleAccess) => {
+    const current = moduleAccessMap[userId] || { crm: true, philanthropy: false, advoLink: false };
+    const updated = { ...current, [module]: !current[module] };
+    setModuleAccessMap((prev) => ({ ...prev, [userId]: updated }));
+
+    await supabase
+      .from('users')
+      .update({ module_access: updated })
+      .eq('id', userId);
+  };
+
+  // Association options management
+  const addAssociation = async () => {
+    const val = newAssociation.trim();
+    if (!val || associationOpts.includes(val) || !user) return;
+    const updated = [...associationOpts, val];
+    setAssociationOpts(updated);
+    setNewAssociation('');
+    await setAdvoLinkSetting('association_options', updated, user.id);
+  };
+
+  const removeAssociation = async (item: string) => {
+    if (!user) return;
+    const updated = associationOpts.filter((a) => a !== item);
+    setAssociationOpts(updated);
+    await setAdvoLinkSetting('association_options', updated, user.id);
+  };
+
+  // Initiative options management
+  const addInitiative = async () => {
+    const val = newInitiative.trim();
+    if (!val || initiativeOpts.includes(val) || !user) return;
+    const updated = [...initiativeOpts, val];
+    setInitiativeOpts(updated);
+    setNewInitiative('');
+    await setAdvoLinkSetting('initiative_options', updated, user.id);
+  };
+
+  const removeInitiative = async (item: string) => {
+    if (!user) return;
+    const updated = initiativeOpts.filter((i) => i !== item);
+    setInitiativeOpts(updated);
+    await setAdvoLinkSetting('initiative_options', updated, user.id);
+  };
+
+  // Our States save
+  const toggleOurState = async (stateAbbr: string) => {
+    const updated = ourStates.includes(stateAbbr)
+      ? ourStates.filter((s) => s !== stateAbbr)
+      : [...ourStates, stateAbbr].sort();
+    setOurStates(updated);
+    if (user) {
+      await setAdvoLinkSetting('our_states', updated, user.id);
     }
   };
 
@@ -979,6 +1061,192 @@ const Settings: React.FC = () => {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Module Access */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center">
+                <Shield className="w-5 h-5 text-gray-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">Module Access</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Control which modules each user can access. Admins always have full access.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">User</th>
+                    <th className="text-center px-4 py-3 text-sm font-medium text-gray-700">CRM</th>
+                    <th className="text-center px-4 py-3 text-sm font-medium text-gray-700">Philanthropy</th>
+                    <th className="text-center px-4 py-3 text-sm font-medium text-gray-700">AdvoLink</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {allUsers.filter((u) => u.is_active).map((u) => {
+                    const isAdminUser = u.role === 'admin';
+                    const access = moduleAccessMap[u.id] || { crm: true, philanthropy: false, advoLink: false };
+                    return (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-3">
+                          <span className="text-sm font-medium text-gray-900">{u.full_name || u.email}</span>
+                          {isAdminUser && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
+                          )}
+                        </td>
+                        {(['crm', 'philanthropy', 'advoLink'] as const).map((mod) => (
+                          <td key={mod} className="text-center px-4 py-3">
+                            <button
+                              onClick={() => toggleModuleAccess(u.id, mod)}
+                              disabled={isAdminUser}
+                              className={`p-1 rounded-lg transition-colors ${
+                                isAdminUser
+                                  ? 'text-green-500 cursor-not-allowed'
+                                  : access[mod]
+                                    ? 'text-green-600 hover:bg-green-50'
+                                    : 'text-gray-300 hover:bg-gray-100'
+                              }`}
+                              title={isAdminUser ? 'Admin always has access' : `Toggle ${mod}`}
+                            >
+                              {(isAdminUser || access[mod]) ? (
+                                <ToggleRight className="w-6 h-6" />
+                              ) : (
+                                <ToggleLeft className="w-6 h-6" />
+                              )}
+                            </button>
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* AdvoLink Settings */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center">
+                <Landmark className="w-5 h-5 text-teal-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">AdvoLink Settings</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Configure ADVO-LINK module settings.
+              </p>
+            </div>
+            <div className="p-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Jurisdictions</h3>
+              <p className="text-xs text-gray-500 mb-4">
+                Select the jurisdictions relevant to your organization. These control all jurisdiction pick lists across ADVO-LINK and highlight co-sponsors on bills.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {US_STATES.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => toggleOurState(s.value)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      ourStates.includes(s.value)
+                        ? 'bg-teal-100 text-teal-800 border border-teal-200'
+                        : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                    }`}
+                  >
+                    {s.value === 'US' ? 'Federal' : s.value}
+                  </button>
+                ))}
+              </div>
+              {ourStates.length > 0 && (
+                <p className="mt-3 text-xs text-gray-500">
+                  Selected: {ourStates.join(', ')}
+                </p>
+              )}
+
+              {/* Associations */}
+              <div className="border-t border-gray-200 mt-6 pt-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Associations</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Configure the association options shown in GA Committee engagements.
+                </p>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newAssociation}
+                    onChange={(e) => setNewAssociation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addAssociation())}
+                    placeholder="New association name..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={addAssociation}
+                    disabled={!newAssociation.trim()}
+                    className="inline-flex items-center px-3 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {associationOpts.map((a) => (
+                    <div key={a} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-800">{a}</span>
+                      <button
+                        onClick={() => removeAssociation(a)}
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {associationOpts.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">No associations configured.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Initiatives */}
+              <div className="border-t border-gray-200 mt-6 pt-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Initiatives</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Configure initiative options for tracking what the organization is lobbying for (independent of bills).
+                </p>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newInitiative}
+                    onChange={(e) => setNewInitiative(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addInitiative())}
+                    placeholder="New initiative name..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={addInitiative}
+                    disabled={!newInitiative.trim()}
+                    className="inline-flex items-center px-3 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {initiativeOpts.map((i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-800">{i}</span>
+                      <button
+                        onClick={() => removeInitiative(i)}
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {initiativeOpts.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">No initiatives configured. Add some to enable the initiative picker on engagements.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

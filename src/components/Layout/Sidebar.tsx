@@ -11,6 +11,11 @@ import {
   LogOut,
   Plus,
   BarChart3,
+  Landmark,
+  ScrollText,
+  Handshake,
+  FileBarChart,
+  BookUser,
 } from 'lucide-react';
 import ll3Logo from '../../assets/ll3-logo.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,8 +38,16 @@ const quickAddItems = [
   { path: '/touchpoints/new', label: 'Touchpoint', icon: Phone, color: 'bg-purple-500' },
 ];
 
+const advocacyItems = [
+  { path: '/advocacy', label: 'Dashboard', icon: Landmark },
+  { path: '/advocacy/bills', label: 'Bills', icon: ScrollText },
+  { path: '/advocacy/engagements', label: 'Engagements', icon: Handshake },
+  { path: '/advocacy/directory', label: 'Directory', icon: BookUser },
+  { path: '/advocacy/reports', label: 'Reports', icon: FileBarChart },
+];
+
 const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasModule } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
@@ -142,6 +155,33 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
             </div>
           )}
         </div>
+
+        {/* ADVO-LINK Section */}
+        {hasModule('advoLink') && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="px-4 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              ADVO-LINK
+            </p>
+            {advocacyItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/advocacy'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? 'bg-teal-50 text-teal-600 border border-teal-100'
+                      : 'text-gray-700 hover:bg-gray-50 border border-transparent'
+                  }`
+                }
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        )}
       </nav>
 
       <div className="p-6 border-t border-gray-100 bg-gray-50">

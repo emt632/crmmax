@@ -11,6 +11,12 @@ export type UserRole =
   | 'Marketing'
   | 'General';
 
+export interface ModuleAccess {
+  crm: boolean;
+  philanthropy: boolean;
+  advoLink: boolean;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -21,6 +27,7 @@ export interface UserProfile {
   is_active: boolean;
   reports_to: string | null;
   last_login: string | null;
+  module_access?: ModuleAccess;
   created_at: string;
   updated_at: string;
 }
@@ -411,4 +418,156 @@ export interface SmartCaptureResult {
   organizationId?: string;
   organizationRole?: string;
   savedContactId?: string;
+}
+
+// ─── AdvoLink Types ──────────────────────────────────────────
+
+export type BillStatus =
+  | 'introduced'
+  | 'in_committee'
+  | 'passed_house'
+  | 'passed_senate'
+  | 'enrolled'
+  | 'signed'
+  | 'vetoed'
+  | 'failed';
+
+export interface BillCommittee {
+  committee_id?: number;
+  name: string;
+  chamber?: string;
+}
+
+export interface BillCosponsor {
+  people_id?: number;
+  name: string;
+  party?: string;
+  state?: string;
+  district?: string;
+}
+
+export interface BillGroup {
+  id: string;
+  label: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface Bill {
+  id: string;
+  bill_number: string;
+  title: string;
+  description?: string;
+  status: BillStatus;
+  jurisdiction: string;
+  session_id?: number;
+  author?: string;
+  committees: BillCommittee[];
+  cosponsors: BillCosponsor[];
+  bill_group_id?: string;
+  legiscan_bill_id?: number;
+  legiscan_raw?: any;
+  is_priority: boolean;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  bill_group?: BillGroup;
+  companion_bills?: Bill[];
+}
+
+export type GAEngagementType =
+  | 'lobby_team'
+  | 'ga_committee'
+  | 'legislator_office'
+  | 'committee_meeting'
+  | 'federal_state_entity';
+
+export interface GAEngagement {
+  id: string;
+  type: GAEngagementType;
+  date: string;
+  duration?: number;
+  subject: string;
+  notes?: string;
+  topics_covered?: string;
+  jurisdiction?: string;
+  // Legislator fields
+  legislator_people_id?: number;
+  legislator_name?: string;
+  meeting_level?: 'member' | 'staff';
+  // Association fields
+  association_name?: string;
+  // Entity fields
+  entity_name?: string;
+  initiative?: string;
+  committee_office_id?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Follow-up fields
+  follow_up_required?: boolean;
+  follow_up_date?: string;
+  follow_up_notes?: string;
+  follow_up_completed?: boolean;
+  follow_up_assigned_to?: string;
+  // Joined
+  bills?: { id: string; bill_number: string; title: string }[];
+  staff?: { id: string; full_name: string | null; email: string }[];
+  contacts?: { id: string; first_name: string; last_name: string }[];
+}
+
+export interface LegiscanLegislator {
+  people_id: number;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  party?: string;
+  state?: string;
+  chamber?: string;
+  district?: string;
+  committee_ids?: number[];
+  fetched_at?: string;
+}
+
+export interface LegiscanSession {
+  session_id: number;
+  jurisdiction: string;
+  name: string;
+  year_start?: number;
+  year_end?: number;
+  fetched_at?: string;
+}
+
+export interface LegislativeOffice {
+  id: string;
+  office_type: 'legislator' | 'committee';
+  name: string;
+  state?: string;
+  chamber?: string;
+  district?: string;
+  legislator_people_id?: number;
+  address?: string;
+  city?: string;
+  office_state?: string;
+  zip?: string;
+  phone?: string;
+  email?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LegislativeOfficeStaff {
+  id: string;
+  office_id: string;
+  first_name: string;
+  last_name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }

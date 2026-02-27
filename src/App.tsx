@@ -16,6 +16,14 @@ import ContactImport from './pages/ContactImport';
 import ShareTarget from './pages/ShareTarget';
 import Login from './pages/Login';
 import TeamActivity from './pages/TeamActivity';
+import AdvocacyDashboard from './components/Advocacy/AdvocacyDashboard';
+import BillsList from './components/Advocacy/BillsList';
+import BillForm from './components/Advocacy/BillForm';
+import BillDetail from './components/Advocacy/BillDetail';
+import EngagementsList from './components/Advocacy/EngagementsList';
+import EngagementForm from './components/Advocacy/EngagementForm';
+import AdvocacyReports from './components/Advocacy/AdvocacyReports';
+import LegislativeDirectory from './components/Advocacy/LegislativeDirectory';
 
 function App() {
   return (
@@ -41,7 +49,16 @@ function App() {
               <Route path="donors" element={<ComingSoon module="Donors" />} />
               <Route path="campaigns" element={<ComingSoon module="Campaigns" />} />
               <Route path="grants" element={<ComingSoon module="Grants" />} />
-              <Route path="advocacy" element={<ComingSoon module="ADVO-LINK" />} />
+              <Route path="advocacy" element={<AdvocacyDashboard />} />
+              <Route path="advocacy/bills" element={<BillsList />} />
+              <Route path="advocacy/bills/new" element={<BillForm />} />
+              <Route path="advocacy/bills/:id" element={<BillDetail />} />
+              <Route path="advocacy/bills/:id/edit" element={<BillForm />} />
+              <Route path="advocacy/engagements" element={<EngagementsList />} />
+              <Route path="advocacy/engagements/new" element={<EngagementForm />} />
+              <Route path="advocacy/engagements/:id" element={<EngagementForm />} />
+              <Route path="advocacy/directory" element={<LegislativeDirectory />} />
+              <Route path="advocacy/reports" element={<AdvocacyReports />} />
               <Route path="share-target" element={<ShareTarget />} />
               <Route path="reports" element={<Reports />} />
               <Route path="team-activity" element={<TeamActivity />} />

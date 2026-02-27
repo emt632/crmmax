@@ -11,6 +11,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/cms/, '/provider-data/api/1'),
       },
+      '/api/legiscan': {
+        target: 'https://api.legiscan.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/legiscan/, ''),
+      },
     },
   },
 })
