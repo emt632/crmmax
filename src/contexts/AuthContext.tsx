@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [impersonatedProfile, setImpersonatedProfile] = useState<UserProfile | null>(null);
   const [impersonatedSubordinateIds, setImpersonatedSubordinateIds] = useState<string[]>([]);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, silent = false) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -57,7 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Failed to fetch profile:', error);
-        setProfile(null);
+        // If silent (background refresh), keep existing profile to avoid unmounting
+        if (!silent) setProfile(null);
         return;
       }
 
@@ -74,7 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch subordinate IDs
       await fetchSubordinates(userId);
     } catch {
-      setProfile(null);
+      // If silent (background refresh), keep existing profile
+      if (!silent) setProfile(null);
     }
   };
 
@@ -126,35 +128,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes (token refresh, sign-in, sign-out, etc.)
-    // IMPORTANT: Never set loading=true after initial hydration — doing so
-    // unmounts ProtectedRoute's children and destroys in-progress form state
-    // (e.g. when switching macOS desktops and returning).
+    // CRITICAL: After initial hydration, never set loading=true or clear
+    // user/profile on transient events. Doing so unmounts ProtectedRoute's
+    // children and destroys in-progress form state (e.g. switching macOS desktops).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       if (session?.user) {
+        setSession(session);
+        setUser(session.user);
         if (!initializedRef.current) {
-          // First-ever auth event before getSession resolved
           setLoading(true);
           fetchProfile(session.user.id).then(() => {
             initializedRef.current = true;
             setLoading(false);
           });
         } else {
-          // Already initialized — silently refresh profile, never touch loading
-          fetchProfile(session.user.id);
+          // Already initialized — silently refresh, never touch loading/user/profile
+          fetchProfile(session.user.id, true);
         }
         if (event === 'SIGNED_IN') {
           supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
         }
-      } else {
+      } else if (event === 'SIGNED_OUT') {
+        // Only clear state on explicit sign-out, never on transient null-session events
+        setSession(null);
+        setUser(null);
         setProfile(null);
         setSubordinateIds([]);
-        if (!initializedRef.current) {
-          initializedRef.current = true;
-        }
         setLoading(false);
       }
+      // Ignore all other events with null session (TOKEN_REFRESHED glitches, etc.)
     });
 
     return () => subscription.unsubscribe();
