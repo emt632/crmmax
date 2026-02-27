@@ -195,30 +195,60 @@ const emptyForm: EngagementFormData = {
   follow_up_assigned_to: '',
 };
 
+// ─── Session storage helpers to survive page reloads / desktop switches ───
+const DRAFT_KEY = 'engagement-draft';
+
+function saveDraft(data: {
+  formData: EngagementFormData;
+  billIds: string[];
+  staffIds: string[];
+  contactIds: string[];
+  legislatorIds: string[];
+  legStaffIds: string[];
+  committeeOfficeId: string;
+  committeeStaffIds: string[];
+}) {
+  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch {}
+}
+
+function loadDraft(): ReturnType<typeof JSON.parse> | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function clearDraft() {
+  try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
 const EngagementForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, hasModule } = useAuth();
   const isEditing = Boolean(id);
 
-  const [formData, setFormData] = useState<EngagementFormData>(emptyForm);
+  // Restore draft for NEW engagements only (not edits)
+  const draft = !isEditing ? loadDraft() : null;
+
+  const [formData, setFormData] = useState<EngagementFormData>(draft?.formData || emptyForm);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Multi-select state — existing junctions
-  const [selectedBillIds, setSelectedBillIds] = useState<string[]>([]);
-  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
-  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [selectedBillIds, setSelectedBillIds] = useState<string[]>(draft?.billIds || []);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(draft?.staffIds || []);
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(draft?.contactIds || []);
 
   // Multi-select state — new junctions
-  const [selectedLegislatorIds, setSelectedLegislatorIds] = useState<string[]>([]);
-  const [selectedLegStaffIds, setSelectedLegStaffIds] = useState<string[]>([]);
+  const [selectedLegislatorIds, setSelectedLegislatorIds] = useState<string[]>(draft?.legislatorIds || []);
+  const [selectedLegStaffIds, setSelectedLegStaffIds] = useState<string[]>(draft?.legStaffIds || []);
 
   // Committee state
   const [committeeOffices, setCommitteeOffices] = useState<LegislativeOffice[]>([]);
-  const [selectedCommitteeOfficeId, setSelectedCommitteeOfficeId] = useState<string>('');
+  const [selectedCommitteeOfficeId, setSelectedCommitteeOfficeId] = useState<string>(draft?.committeeOfficeId || '');
   const [committeeStaffOptions, setCommitteeStaffOptions] = useState<MultiSelectOption[]>([]);
-  const [selectedCommitteeStaffIds, setSelectedCommitteeStaffIds] = useState<string[]>([]);
+  const [selectedCommitteeStaffIds, setSelectedCommitteeStaffIds] = useState<string[]>(draft?.committeeStaffIds || []);
 
   // Chamber filter for legislator picker
   const [chamberFilter, setChamberFilter] = useState('');
@@ -239,6 +269,23 @@ const EngagementForm: React.FC = () => {
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddOfficeModal, setShowAddOfficeModal] = useState(false);
   const [showAddCommitteeStaffModal, setShowAddCommitteeStaffModal] = useState(false);
+
+  // Persist draft to sessionStorage on every change (new engagements only)
+  useEffect(() => {
+    if (isEditing) return;
+    saveDraft({
+      formData,
+      billIds: selectedBillIds,
+      staffIds: selectedStaffIds,
+      contactIds: selectedContactIds,
+      legislatorIds: selectedLegislatorIds,
+      legStaffIds: selectedLegStaffIds,
+      committeeOfficeId: selectedCommitteeOfficeId,
+      committeeStaffIds: selectedCommitteeStaffIds,
+    });
+  }, [formData, selectedBillIds, selectedStaffIds, selectedContactIds,
+      selectedLegislatorIds, selectedLegStaffIds, selectedCommitteeOfficeId,
+      selectedCommitteeStaffIds, isEditing]);
 
   useEffect(() => {
     fetchLookupData();
@@ -571,12 +618,14 @@ const EngagementForm: React.FC = () => {
     await Promise.all(inserts);
 
     setSaving(false);
+    clearDraft();
     navigate('/advocacy/engagements');
   };
 
   const handleDelete = async () => {
     if (!id || !confirm('Are you sure you want to delete this engagement?')) return;
     await supabase.from('ga_engagements').delete().eq('id', id);
+    clearDraft();
     navigate('/advocacy/engagements');
   };
 
@@ -605,7 +654,7 @@ const EngagementForm: React.FC = () => {
       {/* Header */}
       <div className="bg-teal-700 rounded-xl p-5 text-white shadow-sm">
         <button
-          onClick={() => navigate('/advocacy/engagements')}
+          onClick={() => { clearDraft(); navigate('/advocacy/engagements'); }}
           className="flex items-center text-teal-200 hover:text-white mb-2 transition-colors text-sm"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -951,7 +1000,7 @@ const EngagementForm: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => navigate('/advocacy/engagements')} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
+            <button type="button" onClick={() => { clearDraft(); navigate('/advocacy/engagements'); }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
               Cancel
             </button>
             <button
