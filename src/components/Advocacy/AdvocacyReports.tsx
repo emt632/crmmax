@@ -41,15 +41,20 @@ interface EnrichedEngagement extends GAEngagement {
   bills: { id: string; bill_number: string; title: string }[];
   staff: { id: string; full_name: string | null; email: string }[];
   contacts: { id: string; first_name: string; last_name: string }[];
+  legislators: { people_id: number; name: string; party?: string; chamber?: string; state?: string }[];
+  legStaff: { id: string; first_name: string; last_name: string; title?: string }[];
 }
 
 /** Plain-text engagement description for sorting, CSV, and PDF */
 const getEngagementText = (e: EnrichedEngagement): string => {
   switch (e.type) {
     case 'legislator_office': {
-      const name = e.legislator_name || 'Unknown Legislator';
+      const legNames = e.legislators.map(l => l.name).filter(Boolean);
+      const name = legNames.length > 0 ? legNames.join(', ') : (e.legislator_name || 'Unknown Legislator');
       const level = e.meeting_level === 'staff' ? ' (Staff)' : e.meeting_level === 'member' ? ' (Member)' : '';
-      return `${name}${level}`;
+      const lsNames = e.legStaff.map(ls => `${ls.first_name} ${ls.last_name}`).filter(Boolean);
+      const staffSuffix = lsNames.length > 0 ? ` [${lsNames.join(', ')}]` : '';
+      return `${name}${level}${staffSuffix}`;
     }
     case 'lobby_team':
       return e.staff.length > 0
@@ -106,7 +111,7 @@ const AdvocacyReports: React.FC = () => {
     try {
       setLoading(true);
 
-      const [engRes, billJoinRes, staffJoinRes, contactJoinRes, usersRes] = await Promise.all([
+      const [engRes, billJoinRes, staffJoinRes, contactJoinRes, legJoinRes, legStaffJoinRes, usersRes] = await Promise.all([
         supabase
           .from('ga_engagements')
           .select('*')
@@ -120,6 +125,12 @@ const AdvocacyReports: React.FC = () => {
         supabase
           .from('ga_engagement_contacts')
           .select('engagement_id, contact_id, contacts(id, first_name, last_name)'),
+        supabase
+          .from('ga_engagement_legislators')
+          .select('engagement_id, people_id, legiscan_legislators(people_id, name, party, chamber, state)'),
+        supabase
+          .from('ga_engagement_leg_staff')
+          .select('engagement_id, staff_id, legislative_office_staff(id, first_name, last_name, title)'),
         supabase
           .from('users')
           .select('id, full_name, email')
@@ -160,11 +171,31 @@ const AdvocacyReports: React.FC = () => {
         contactMap.get(eid)!.push(contact);
       }
 
+      const legMap = new Map<string, { people_id: number; name: string; party?: string; chamber?: string; state?: string }[]>();
+      for (const row of legJoinRes.data || []) {
+        const eid = row.engagement_id as string;
+        const leg = row.legiscan_legislators as unknown as { people_id: number; name: string; party?: string; chamber?: string; state?: string } | null;
+        if (!leg) continue;
+        if (!legMap.has(eid)) legMap.set(eid, []);
+        legMap.get(eid)!.push(leg);
+      }
+
+      const legStaffMap = new Map<string, { id: string; first_name: string; last_name: string; title?: string }[]>();
+      for (const row of legStaffJoinRes.data || []) {
+        const eid = row.engagement_id as string;
+        const ls = row.legislative_office_staff as unknown as { id: string; first_name: string; last_name: string; title?: string } | null;
+        if (!ls) continue;
+        if (!legStaffMap.has(eid)) legStaffMap.set(eid, []);
+        legStaffMap.get(eid)!.push(ls);
+      }
+
       const enriched: EnrichedEngagement[] = rawEngagements.map(e => ({
         ...e,
         bills: billMap.get(e.id) || [],
         staff: staffMap.get(e.id) || [],
         contacts: contactMap.get(e.id) || [],
+        legislators: legMap.get(e.id) || [],
+        legStaff: legStaffMap.get(e.id) || [],
       }));
 
       setEngagements(enriched);
@@ -329,7 +360,8 @@ const AdvocacyReports: React.FC = () => {
 
   const exportCSV = () => {
     const headers = [
-      'Date', 'Engagement', 'Meeting Level', 'Subject', 'Jurisdiction',
+      'Date', 'Engagement', 'Meeting Level', 'Legislators Met', 'Legislative Staff Met',
+      'Subject', 'Jurisdiction',
       'Initiative', 'Meeting Location', 'Location Detail',
       'Bills', 'LL3 Staff', 'PSG Attendees', 'Duration (min)',
       'Topics Covered', 'Notes', 'Follow-Up Required', 'Follow-Up Date',
@@ -340,6 +372,8 @@ const AdvocacyReports: React.FC = () => {
       e.date ? format(new Date(e.date + 'T00:00:00'), 'yyyy-MM-dd') : '',
       getEngagementText(e),
       e.type === 'legislator_office' ? (e.meeting_level || '') : '',
+      e.legislators.map(l => `${l.name}${l.party ? ` (${l.party})` : ''}`).join('; '),
+      e.legStaff.map(ls => `${ls.first_name} ${ls.last_name}${ls.title ? ` - ${ls.title}` : ''}`).join('; '),
       e.subject,
       getJurisdictionLabel(e.jurisdiction),
       e.initiative || '',
@@ -441,11 +475,16 @@ const AdvocacyReports: React.FC = () => {
 
     switch (e.type) {
       case 'legislator_office': {
-        const name = e.legislator_name || 'Unknown Legislator';
+        const legNames = e.legislators.map(l => {
+          const partyTag = l.party ? ` (${l.party})` : '';
+          return `${l.name}${partyTag}`;
+        });
+        const legStaffNames = e.legStaff.map(ls => `${ls.first_name} ${ls.last_name}`);
+        const displayName = legNames.length > 0 ? legNames.join(', ') : (e.legislator_name || 'Unknown Legislator');
         return (
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-medium text-gray-900">{name}</span>
+              <span className="font-medium text-gray-900">{displayName}</span>
               {e.meeting_level && (
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                   e.meeting_level === 'member' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'
@@ -454,6 +493,9 @@ const AdvocacyReports: React.FC = () => {
                 </span>
               )}
             </div>
+            {legStaffNames.length > 0 && (
+              <span className="text-xs text-gray-500">Staff: {legStaffNames.join(', ')}</span>
+            )}
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
               {typeLabel}
             </span>
