@@ -107,8 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Track whether initial hydration is done — never show loading spinner after this
-  const initializedRef = React.useRef(false);
+  // Use a ref to access current profile without adding it to effect deps
+  const profileRef = React.useRef(profile);
+  profileRef.current = profile;
 
   useEffect(() => {
     // Hydrate from existing session
@@ -116,47 +117,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).then(() => {
-          initializedRef.current = true;
-          setLoading(false);
-        });
+        fetchProfile(session.user.id).then(() => setLoading(false));
         supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
       } else {
-        initializedRef.current = true;
         setLoading(false);
       }
     });
 
     // Listen for auth changes (token refresh, sign-in, sign-out, etc.)
-    // CRITICAL: After initial hydration, never set loading=true or clear
-    // user/profile on transient events. Doing so unmounts ProtectedRoute's
-    // children and destroys in-progress form state (e.g. switching macOS desktops).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setSession(session);
         setUser(session.user);
-        if (!initializedRef.current) {
-          setLoading(true);
-          fetchProfile(session.user.id).then(() => {
-            initializedRef.current = true;
-            setLoading(false);
-          });
-        } else {
-          // Already initialized — silently refresh, never touch loading/user/profile
+
+        if (profileRef.current) {
+          // Already have a loaded profile (e.g. desktop switch, token refresh).
+          // Silently refresh — never touch loading to avoid unmounting forms.
           fetchProfile(session.user.id, true);
+        } else {
+          // No profile yet (fresh sign-in). Show loading and fetch properly.
+          setLoading(true);
+          fetchProfile(session.user.id).then(() => setLoading(false));
         }
+
         if (event === 'SIGNED_IN') {
           supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', session.user.id).then(() => {});
         }
       } else if (event === 'SIGNED_OUT') {
-        // Only clear state on explicit sign-out, never on transient null-session events
+        // Only clear state on explicit sign-out
         setSession(null);
         setUser(null);
         setProfile(null);
         setSubordinateIds([]);
         setLoading(false);
       }
-      // Ignore all other events with null session (TOKEN_REFRESHED glitches, etc.)
+      // Ignore transient null-session events (TOKEN_REFRESHED glitches, etc.)
     });
 
     return () => subscription.unsubscribe();
