@@ -9,7 +9,10 @@ import {
   Calendar,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   AlertCircle,
+  MapPin,
+  Lightbulb,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -23,8 +26,14 @@ import {
 } from '../../lib/bill-format';
 import { getOurStates } from '../../lib/legiscan-api';
 
-type SortField = 'date' | 'type' | 'subject' | 'jurisdiction' | 'entity' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
+type SortField = 'date' | 'type' | 'subject' | 'jurisdiction' | 'entity' | 'initiative' | 'location' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
 type SortDir = 'asc' | 'desc';
+
+const MEETING_LOCATION_LABELS: Record<string, string> = {
+  virtual: 'Virtual',
+  in_person: 'In-Person',
+  other: 'Other',
+};
 
 interface EnrichedEngagement extends GAEngagement {
   bills: { id: string; bill_number: string; title: string }[];
@@ -59,10 +68,15 @@ const AdvocacyReports: React.FC = () => {
   const [filterStaff, setFilterStaff] = useState('all');
   const [filterContact, setFilterContact] = useState('all');
   const [filterScope, setFilterScope] = useState<'all' | 'mine'>('all');
+  const [filterInitiative, setFilterInitiative] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
 
   // Sort
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  // Expanded row detail
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -161,6 +175,12 @@ const AdvocacyReports: React.FC = () => {
     return Array.from(map.values()).sort((a, b) => a.last_name.localeCompare(b.last_name));
   }, [engagements]);
 
+  const uniqueInitiatives = useMemo(() => {
+    const set = new Set<string>();
+    engagements.forEach(e => { if (e.initiative) set.add(e.initiative); });
+    return Array.from(set).sort();
+  }, [engagements]);
+
   // Filtering
   const filteredEngagements = useMemo(() => {
     let filtered = [...engagements];
@@ -189,9 +209,15 @@ const AdvocacyReports: React.FC = () => {
     if (filterContact !== 'all') {
       filtered = filtered.filter(e => e.contacts.some(c => c.id === filterContact));
     }
+    if (filterInitiative !== 'all') {
+      filtered = filtered.filter(e => e.initiative === filterInitiative);
+    }
+    if (filterLocation !== 'all') {
+      filtered = filtered.filter(e => e.meeting_location === filterLocation);
+    }
 
     return filtered;
-  }, [engagements, filterScope, filterDateFrom, filterDateTo, filterJurisdiction, filterType, filterBill, filterStaff, filterContact, effectiveUserId]);
+  }, [engagements, filterScope, filterDateFrom, filterDateTo, filterJurisdiction, filterType, filterBill, filterStaff, filterContact, filterInitiative, filterLocation, effectiveUserId]);
 
   // Sorting
   const sortedEngagements = useMemo(() => {
@@ -206,6 +232,8 @@ const AdvocacyReports: React.FC = () => {
         case 'subject': cmp = a.subject.localeCompare(b.subject); break;
         case 'jurisdiction': cmp = (a.jurisdiction || '').localeCompare(b.jurisdiction || ''); break;
         case 'entity': cmp = getEntityDisplay(a).localeCompare(getEntityDisplay(b)); break;
+        case 'initiative': cmp = (a.initiative || '').localeCompare(b.initiative || ''); break;
+        case 'location': cmp = (a.meeting_location || '').localeCompare(b.meeting_location || ''); break;
         case 'bills': cmp = a.bills.length - b.bills.length; break;
         case 'staff': cmp = a.staff.length - b.staff.length; break;
         case 'contacts': cmp = a.contacts.length - b.contacts.length; break;
@@ -241,6 +269,8 @@ const AdvocacyReports: React.FC = () => {
     setFilterStaff('all');
     setFilterContact('all');
     setFilterScope('all');
+    setFilterInitiative('all');
+    setFilterLocation('all');
   };
 
   const buildFilterSummary = (): string => {
@@ -265,6 +295,8 @@ const AdvocacyReports: React.FC = () => {
       const c = uniqueContacts.find(x => x.id === filterContact);
       parts.push(`PSG: ${c ? `${c.first_name} ${c.last_name}` : ''}`);
     }
+    if (filterInitiative !== 'all') parts.push(`Initiative: ${filterInitiative}`);
+    if (filterLocation !== 'all') parts.push(`Location: ${MEETING_LOCATION_LABELS[filterLocation] || filterLocation}`);
     return parts.length > 0 ? parts.join(' | ') : 'None';
   };
 
@@ -280,9 +312,10 @@ const AdvocacyReports: React.FC = () => {
   const exportCSV = () => {
     const headers = [
       'Date', 'Type', 'Subject', 'Jurisdiction', 'Entity/Legislator',
+      'Initiative', 'Meeting Location', 'Location Detail',
       'Bills', 'LL3 Staff', 'PSG Attendees', 'Duration (min)',
       'Topics Covered', 'Notes', 'Follow-Up Required', 'Follow-Up Date',
-      'Follow-Up Assigned To', 'Follow-Up Completed',
+      'Follow-Up Assigned To', 'Follow-Up Completed', 'Follow-Up Notes',
     ];
 
     const rows = filteredEngagements.map(e => [
@@ -291,6 +324,9 @@ const AdvocacyReports: React.FC = () => {
       e.subject,
       getJurisdictionLabel(e.jurisdiction),
       getEntityDisplay(e),
+      e.initiative || '',
+      e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
+      e.meeting_location_detail || '',
       e.bills.map(b => formatBillNumber(b.bill_number)).join('; '),
       e.staff.map(s => s.full_name || s.email).join('; '),
       e.contacts.map(c => `${c.first_name} ${c.last_name}`).join('; '),
@@ -301,6 +337,7 @@ const AdvocacyReports: React.FC = () => {
       e.follow_up_date || '',
       e.follow_up_assigned_to ? (userMap[e.follow_up_assigned_to] || '') : '',
       e.follow_up_completed ? 'Yes' : 'No',
+      e.follow_up_notes || '',
     ]);
 
     const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
@@ -318,13 +355,15 @@ const AdvocacyReports: React.FC = () => {
     doc.setTextColor(100);
     doc.text(`Generated: ${format(new Date(), 'MMMM d, yyyy')} | Filters: ${buildFilterSummary()}`, 14, 30);
 
-    const headers = ['Date', 'Type', 'Subject', 'Jurisdiction', 'Entity', 'Bills', 'Attendees', 'Duration'];
+    const headers = ['Date', 'Type', 'Subject', 'Jurisdiction', 'Entity', 'Initiative', 'Location', 'Bills', 'Attendees', 'Dur.'];
     const rows = filteredEngagements.map(e => [
       e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : '',
       GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type,
-      e.subject.length > 40 ? e.subject.slice(0, 37) + '...' : e.subject,
+      e.subject.length > 35 ? e.subject.slice(0, 32) + '...' : e.subject,
       getJurisdictionLabel(e.jurisdiction),
       getEntityDisplay(e),
+      e.initiative || '',
+      e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
       e.bills.map(b => formatBillNumber(b.bill_number)).join('; '),
       [...e.staff.map(s => s.full_name || ''), ...e.contacts.map(c => `${c.first_name} ${c.last_name}`)].join('; '),
       e.duration != null ? `${e.duration}m` : '',
@@ -334,13 +373,13 @@ const AdvocacyReports: React.FC = () => {
       head: [headers],
       body: rows,
       startY: 36,
-      styles: { fontSize: 7, cellPadding: 2 },
+      styles: { fontSize: 6.5, cellPadding: 2 },
       headStyles: { fillColor: [13, 148, 136] },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       columnStyles: {
-        0: { cellWidth: 22 },
-        2: { cellWidth: 50 },
-        7: { cellWidth: 18 },
+        0: { cellWidth: 18 },
+        2: { cellWidth: 40 },
+        9: { cellWidth: 14 },
       },
     });
 
@@ -569,6 +608,42 @@ const AdvocacyReports: React.FC = () => {
               ))}
             </select>
           </div>
+
+          {/* Initiative */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <Lightbulb className="w-3 h-3 inline mr-1" />
+              Initiative
+            </label>
+            <select
+              value={filterInitiative}
+              onChange={(e) => setFilterInitiative(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="all">All Initiatives</option>
+              {uniqueInitiatives.map(i => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Meeting Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <MapPin className="w-3 h-3 inline mr-1" />
+              Meeting Location
+            </label>
+            <select
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="all">All Locations</option>
+              <option value="virtual">Virtual</option>
+              <option value="in_person">In-Person</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -578,22 +653,25 @@ const AdvocacyReports: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="w-6 px-1 py-3"></th>
                 {([
                   ['date', 'Date'],
                   ['type', 'Type'],
                   ['subject', 'Subject'],
-                  ['jurisdiction', 'Jurisdiction'],
+                  ['jurisdiction', 'Jur.'],
                   ['entity', 'Entity'],
+                  ['initiative', 'Initiative'],
+                  ['location', 'Location'],
                   ['bills', 'Bills'],
                   ['staff', 'LL3 Staff'],
-                  ['contacts', 'PSG Attendees'],
-                  ['duration', 'Duration'],
+                  ['contacts', 'PSG'],
+                  ['duration', 'Dur.'],
                   ['follow_up', 'Follow-Up'],
                 ] as [SortField, string][]).map(([field, label]) => (
                   <th
                     key={field}
                     onClick={() => toggleSort(field)}
-                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                    className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
                   >
                     <span className="inline-flex items-center gap-1">
                       {label}
@@ -604,69 +682,130 @@ const AdvocacyReports: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {previewData.map(e => (
-                <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
-                    {e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : ''}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-900 max-w-[200px] truncate" title={e.subject}>
-                    {e.subject}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {getJurisdictionLabel(e.jurisdiction) || '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 max-w-[150px] truncate" title={getEntityDisplay(e)}>
-                    {getEntityDisplay(e) || '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 max-w-[150px]">
-                    {e.bills.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {e.bills.map(b => (
-                          <span key={b.id} className="inline-block px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-xs">
-                            {formatBillNumber(b.bill_number)}
+              {previewData.map(e => {
+                const isExpanded = expandedRow === e.id;
+                const hasDetail = !!(e.notes || e.topics_covered || e.follow_up_notes || e.meeting_location_detail);
+                return (
+                  <React.Fragment key={e.id}>
+                    <tr
+                      className={`hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-teal-50/40' : ''}`}
+                      onClick={() => setExpandedRow(isExpanded ? null : e.id)}
+                    >
+                      <td className="w-6 px-1 py-3 text-gray-400">
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''} ${hasDetail ? 'text-teal-500' : 'opacity-30'}`} />
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-900 whitespace-nowrap">
+                        {e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : ''}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        {GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-900 max-w-[180px] truncate" title={e.subject}>
+                        {e.subject}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        {getJurisdictionLabel(e.jurisdiction) || '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[130px] truncate" title={getEntityDisplay(e)}>
+                        {getEntityDisplay(e) || '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate" title={e.initiative || ''}>
+                        {e.initiative || '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        {e.meeting_location ? (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                            e.meeting_location === 'virtual' ? 'bg-blue-50 text-blue-700' :
+                            e.meeting_location === 'in_person' ? 'bg-green-50 text-green-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location}
                           </span>
-                        ))}
-                      </div>
-                    ) : '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 max-w-[150px] truncate">
-                    {e.staff.length > 0 ? e.staff.map(s => s.full_name || '').filter(Boolean).join(', ') : '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 max-w-[150px] truncate">
-                    {e.contacts.length > 0 ? e.contacts.map(c => `${c.first_name} ${c.last_name}`).join(', ') : '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {e.duration != null ? `${e.duration}m` : '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm">
-                    {e.follow_up_required ? (
-                      <div className="flex flex-col gap-0.5">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium w-fit ${
-                          e.follow_up_completed
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {e.follow_up_completed ? 'Done' : e.follow_up_date ? format(new Date(e.follow_up_date + 'T00:00:00'), 'MM/dd') : 'Pending'}
-                        </span>
-                        {e.follow_up_assigned_to && userMap[e.follow_up_assigned_to] && (
-                          <span className="text-[10px] text-gray-400 truncate max-w-[100px]" title={userMap[e.follow_up_assigned_to]}>
-                            {userMap[e.follow_up_assigned_to]}
-                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px]">
+                        {e.bills.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {e.bills.map(b => (
+                              <span key={b.id} className="inline-block px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-xs">
+                                {formatBillNumber(b.bill_number)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate">
+                        {e.staff.length > 0 ? e.staff.map(s => s.full_name || '').filter(Boolean).join(', ') : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate">
+                        {e.contacts.length > 0 ? e.contacts.map(c => `${c.first_name} ${c.last_name}`).join(', ') : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        {e.duration != null ? `${e.duration}m` : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm">
+                        {e.follow_up_required ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium w-fit ${
+                              e.follow_up_completed
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {e.follow_up_completed ? 'Done' : e.follow_up_date ? format(new Date(e.follow_up_date + 'T00:00:00'), 'MM/dd') : 'Pending'}
+                            </span>
+                            {e.follow_up_assigned_to && userMap[e.follow_up_assigned_to] && (
+                              <span className="text-[10px] text-gray-400 truncate max-w-[100px]" title={userMap[e.follow_up_assigned_to]}>
+                                {userMap[e.follow_up_assigned_to]}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
                         )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">—</span>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-gray-50/70">
+                        <td colSpan={13} className="px-6 py-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {e.notes && (
+                              <div>
+                                <span className="font-medium text-gray-700">Notes:</span>
+                                <p className="mt-1 text-gray-600 whitespace-pre-wrap">{e.notes}</p>
+                              </div>
+                            )}
+                            {e.topics_covered && (
+                              <div>
+                                <span className="font-medium text-gray-700">Topics Covered:</span>
+                                <p className="mt-1 text-gray-600 whitespace-pre-wrap">{e.topics_covered}</p>
+                              </div>
+                            )}
+                            {e.meeting_location_detail && (
+                              <div>
+                                <span className="font-medium text-gray-700">Location Detail:</span>
+                                <p className="mt-1 text-gray-600">{e.meeting_location_detail}</p>
+                              </div>
+                            )}
+                            {e.follow_up_notes && (
+                              <div>
+                                <span className="font-medium text-gray-700">Follow-Up Notes:</span>
+                                <p className="mt-1 text-gray-600 whitespace-pre-wrap">{e.follow_up_notes}</p>
+                              </div>
+                            )}
+                            {!e.notes && !e.topics_covered && !e.meeting_location_detail && !e.follow_up_notes && (
+                              <p className="text-gray-400 italic">No additional details recorded</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </React.Fragment>
+                );
+              })}
 
               {filteredEngagements.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={13} className="px-4 py-12 text-center text-gray-500">
                     No engagements match your filters
                   </td>
                 </tr>
