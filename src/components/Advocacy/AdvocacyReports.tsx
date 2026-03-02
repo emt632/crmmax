@@ -13,6 +13,7 @@ import {
   AlertCircle,
   MapPin,
   Lightbulb,
+  StickyNote,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -21,12 +22,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   GA_ENGAGEMENT_TYPE_LABELS,
+  GA_ENGAGEMENT_TYPE_BADGE_COLORS,
   US_STATES,
   formatBillNumber,
 } from '../../lib/bill-format';
 import { getOurStates } from '../../lib/legiscan-api';
 
-type SortField = 'date' | 'type' | 'subject' | 'jurisdiction' | 'entity' | 'initiative' | 'location' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
+type SortField = 'date' | 'engagement' | 'subject' | 'jurisdiction' | 'initiative' | 'location' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
 type SortDir = 'asc' | 'desc';
 
 const MEETING_LOCATION_LABELS: Record<string, string> = {
@@ -41,12 +43,26 @@ interface EnrichedEngagement extends GAEngagement {
   contacts: { id: string; first_name: string; last_name: string }[];
 }
 
-const getEntityDisplay = (e: GAEngagement): string => {
+/** Plain-text engagement description for sorting, CSV, and PDF */
+const getEngagementText = (e: EnrichedEngagement): string => {
   switch (e.type) {
-    case 'legislator_office': return e.legislator_name || '';
-    case 'ga_committee': return e.association_name || '';
-    case 'federal_state_entity': return e.entity_name || '';
-    default: return '';
+    case 'legislator_office': {
+      const name = e.legislator_name || 'Unknown Legislator';
+      const level = e.meeting_level === 'staff' ? ' (Staff)' : e.meeting_level === 'member' ? ' (Member)' : '';
+      return `${name}${level}`;
+    }
+    case 'lobby_team':
+      return e.staff.length > 0
+        ? e.staff.map(s => s.full_name || '').filter(Boolean).join(', ')
+        : 'Lobby Team';
+    case 'ga_committee':
+      return e.association_name || 'GA Committee';
+    case 'committee_meeting':
+      return e.association_name || 'Committee Meeting';
+    case 'federal_state_entity':
+      return e.entity_name || 'Federal/State Entity';
+    default:
+      return GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type;
   }
 };
 
@@ -77,6 +93,9 @@ const AdvocacyReports: React.FC = () => {
 
   // Expanded row detail
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Export options
+  const [includeNotes, setIncludeNotes] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -228,10 +247,9 @@ const AdvocacyReports: React.FC = () => {
       let cmp = 0;
       switch (sortField) {
         case 'date': cmp = a.date.localeCompare(b.date); break;
-        case 'type': cmp = (GA_ENGAGEMENT_TYPE_LABELS[a.type] || a.type).localeCompare(GA_ENGAGEMENT_TYPE_LABELS[b.type] || b.type); break;
+        case 'engagement': cmp = getEngagementText(a).localeCompare(getEngagementText(b)); break;
         case 'subject': cmp = a.subject.localeCompare(b.subject); break;
         case 'jurisdiction': cmp = (a.jurisdiction || '').localeCompare(b.jurisdiction || ''); break;
-        case 'entity': cmp = getEntityDisplay(a).localeCompare(getEntityDisplay(b)); break;
         case 'initiative': cmp = (a.initiative || '').localeCompare(b.initiative || ''); break;
         case 'location': cmp = (a.meeting_location || '').localeCompare(b.meeting_location || ''); break;
         case 'bills': cmp = a.bills.length - b.bills.length; break;
@@ -311,7 +329,7 @@ const AdvocacyReports: React.FC = () => {
 
   const exportCSV = () => {
     const headers = [
-      'Date', 'Type', 'Subject', 'Jurisdiction', 'Entity/Legislator',
+      'Date', 'Engagement', 'Meeting Level', 'Subject', 'Jurisdiction',
       'Initiative', 'Meeting Location', 'Location Detail',
       'Bills', 'LL3 Staff', 'PSG Attendees', 'Duration (min)',
       'Topics Covered', 'Notes', 'Follow-Up Required', 'Follow-Up Date',
@@ -320,10 +338,10 @@ const AdvocacyReports: React.FC = () => {
 
     const rows = filteredEngagements.map(e => [
       e.date ? format(new Date(e.date + 'T00:00:00'), 'yyyy-MM-dd') : '',
-      GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type,
+      getEngagementText(e),
+      e.type === 'legislator_office' ? (e.meeting_level || '') : '',
       e.subject,
       getJurisdictionLabel(e.jurisdiction),
-      getEntityDisplay(e),
       e.initiative || '',
       e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
       e.meeting_location_detail || '',
@@ -355,32 +373,39 @@ const AdvocacyReports: React.FC = () => {
     doc.setTextColor(100);
     doc.text(`Generated: ${format(new Date(), 'MMMM d, yyyy')} | Filters: ${buildFilterSummary()}`, 14, 30);
 
-    const headers = ['Date', 'Type', 'Subject', 'Jurisdiction', 'Entity', 'Initiative', 'Location', 'Bills', 'Attendees', 'Dur.'];
-    const rows = filteredEngagements.map(e => [
-      e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : '',
-      GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type,
-      e.subject.length > 35 ? e.subject.slice(0, 32) + '...' : e.subject,
-      getJurisdictionLabel(e.jurisdiction),
-      getEntityDisplay(e),
-      e.initiative || '',
-      e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
-      e.bills.map(b => formatBillNumber(b.bill_number)).join('; '),
-      [...e.staff.map(s => s.full_name || ''), ...e.contacts.map(c => `${c.first_name} ${c.last_name}`)].join('; '),
-      e.duration != null ? `${e.duration}m` : '',
-    ]);
+    const baseHeaders = ['Date', 'Engagement', 'Subject', 'Jur.', 'Initiative', 'Location', 'Bills', 'Attendees', 'Dur.'];
+    const headers = includeNotes ? [...baseHeaders, 'Notes'] : baseHeaders;
+
+    const rows = filteredEngagements.map(e => {
+      const engText = getEngagementText(e);
+      const base = [
+        e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : '',
+        engText.length > 30 ? engText.slice(0, 27) + '...' : engText,
+        e.subject.length > 35 ? e.subject.slice(0, 32) + '...' : e.subject,
+        getJurisdictionLabel(e.jurisdiction),
+        e.initiative || '',
+        e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
+        e.bills.map(b => formatBillNumber(b.bill_number)).join('; '),
+        [...e.staff.map(s => s.full_name || ''), ...e.contacts.map(c => `${c.first_name} ${c.last_name}`)].join('; '),
+        e.duration != null ? `${e.duration}m` : '',
+      ];
+      if (includeNotes) {
+        const notes = e.notes || '';
+        base.push(notes.length > 80 ? notes.slice(0, 77) + '...' : notes);
+      }
+      return base;
+    });
 
     autoTable(doc, {
       head: [headers],
       body: rows,
       startY: 36,
-      styles: { fontSize: 6.5, cellPadding: 2 },
+      styles: { fontSize: includeNotes ? 6 : 6.5, cellPadding: 2 },
       headStyles: { fillColor: [13, 148, 136] },
       alternateRowStyles: { fillColor: [249, 250, 251] },
-      columnStyles: {
-        0: { cellWidth: 18 },
-        2: { cellWidth: 40 },
-        9: { cellWidth: 14 },
-      },
+      columnStyles: includeNotes
+        ? { 0: { cellWidth: 16 }, 2: { cellWidth: 34 }, 8: { cellWidth: 12 }, 9: { cellWidth: 50 } }
+        : { 0: { cellWidth: 18 }, 2: { cellWidth: 40 }, 8: { cellWidth: 14 } },
     });
 
     const pageCount = doc.getNumberOfPages();
@@ -409,6 +434,77 @@ const AdvocacyReports: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  /** Render the Engagement cell with contextual content + type badge */
+  const renderEngagementCell = (e: EnrichedEngagement) => {
+    const badgeColor = GA_ENGAGEMENT_TYPE_BADGE_COLORS[e.type] || 'bg-gray-100 text-gray-600';
+    const typeLabel = GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type;
+
+    switch (e.type) {
+      case 'legislator_office': {
+        const name = e.legislator_name || 'Unknown Legislator';
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-medium text-gray-900">{name}</span>
+              {e.meeting_level && (
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                  e.meeting_level === 'member' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'
+                }`}>
+                  {e.meeting_level === 'member' ? 'Member' : 'Staff'}
+                </span>
+              )}
+            </div>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
+              {typeLabel}
+            </span>
+          </div>
+        );
+      }
+      case 'lobby_team': {
+        const names = e.staff.map(s => s.full_name || '').filter(Boolean);
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-gray-900">
+              {names.length > 0 ? names.join(', ') : 'Lobby Team'}
+            </span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
+              {typeLabel}
+            </span>
+          </div>
+        );
+      }
+      case 'ga_committee':
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-gray-900">{e.association_name || 'GA Committee'}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
+              {typeLabel}
+            </span>
+          </div>
+        );
+      case 'committee_meeting':
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-gray-900">{e.association_name || 'Committee Meeting'}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
+              {typeLabel}
+            </span>
+          </div>
+        );
+      case 'federal_state_entity':
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-gray-900">{e.entity_name || 'Federal/State Entity'}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${badgeColor}`}>
+              {typeLabel}
+            </span>
+          </div>
+        );
+      default:
+        return <span className="text-gray-600">{typeLabel}</span>;
+    }
+  };
+
   if (!hasModule('advoLink')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -432,6 +528,7 @@ const AdvocacyReports: React.FC = () => {
   }
 
   const previewData = sortedEngagements.slice(0, 50);
+  const totalCols = 12; // expand chevron + 11 data columns
 
   return (
     <div className="space-y-6">
@@ -656,10 +753,9 @@ const AdvocacyReports: React.FC = () => {
                 <th className="w-6 px-1 py-3"></th>
                 {([
                   ['date', 'Date'],
-                  ['type', 'Type'],
+                  ['engagement', 'Engagement'],
                   ['subject', 'Subject'],
                   ['jurisdiction', 'Jur.'],
-                  ['entity', 'Entity'],
                   ['initiative', 'Initiative'],
                   ['location', 'Location'],
                   ['bills', 'Bills'],
@@ -697,17 +793,14 @@ const AdvocacyReports: React.FC = () => {
                       <td className="px-2 py-3 text-sm text-gray-900 whitespace-nowrap">
                         {e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : ''}
                       </td>
-                      <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
-                        {GA_ENGAGEMENT_TYPE_LABELS[e.type] || e.type}
+                      <td className="px-2 py-3 text-sm max-w-[220px]">
+                        {renderEngagementCell(e)}
                       </td>
                       <td className="px-2 py-3 text-sm text-gray-900 max-w-[180px] truncate" title={e.subject}>
                         {e.subject}
                       </td>
                       <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
                         {getJurisdictionLabel(e.jurisdiction) || '—'}
-                      </td>
-                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[130px] truncate" title={getEntityDisplay(e)}>
-                        {getEntityDisplay(e) || '—'}
                       </td>
                       <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate" title={e.initiative || ''}>
                         {e.initiative || '—'}
@@ -766,7 +859,7 @@ const AdvocacyReports: React.FC = () => {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-gray-50/70">
-                        <td colSpan={13} className="px-6 py-4">
+                        <td colSpan={totalCols} className="px-6 py-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             {e.notes && (
                               <div>
@@ -805,7 +898,7 @@ const AdvocacyReports: React.FC = () => {
 
               {filteredEngagements.length === 0 && (
                 <tr>
-                  <td colSpan={13} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={totalCols} className="px-4 py-12 text-center text-gray-500">
                     No engagements match your filters
                   </td>
                 </tr>
@@ -823,6 +916,20 @@ const AdvocacyReports: React.FC = () => {
       {/* Export Actions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Export</h3>
+
+        <div className="flex items-center mb-4">
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeNotes}
+              onChange={(e) => setIncludeNotes(e.target.checked)}
+              className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+            />
+            <StickyNote className="w-4 h-4 text-gray-500 ml-2 mr-1.5" />
+            <span className="text-sm text-gray-700">Include notes in PDF export</span>
+          </label>
+        </div>
+
         <div className="flex flex-wrap gap-3">
           <button
             onClick={exportCSV}
