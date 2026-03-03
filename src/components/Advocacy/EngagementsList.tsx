@@ -133,9 +133,11 @@ const EngagementsList: React.FC = () => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const legNames = (legislatorNames[e.id] || []).join(' ').toLowerCase();
+      const guestNames = (e.guests || []).map((g) => `${g.name} ${g.organization}`).join(' ').toLowerCase();
       return (
         e.subject.toLowerCase().includes(q) ||
         legNames.includes(q) ||
+        guestNames.includes(q) ||
         (e.legislator_name || '').toLowerCase().includes(q) ||
         (e.association_name || '').toLowerCase().includes(q) ||
         (e.entity_name || '').toLowerCase().includes(q)
@@ -149,6 +151,11 @@ const EngagementsList: React.FC = () => {
       case 'legislator_office': return (legislatorNames[e.id] || []).join(', ') || e.legislator_name || '';
       case 'ga_committee': return e.association_name || '';
       case 'federal_state_entity': return e.entity_name || '';
+      case 'lobby_team': {
+        const g = (e.guests || []).filter((g) => g.name.trim());
+        if (g.length === 0) return '';
+        return g.map((g) => g.organization ? `${g.name} (${g.organization})` : g.name).join(', ');
+      }
       default: return '';
     }
   };

@@ -212,6 +212,7 @@ function saveDraft(data: {
   legStaffIds: string[];
   committeeOfficeId: string;
   committeeStaffIds: string[];
+  guests: { name: string; organization: string }[];
 }) {
   try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch {}
 }
@@ -255,6 +256,9 @@ const EngagementForm: React.FC = () => {
   const [committeeStaffOptions, setCommitteeStaffOptions] = useState<MultiSelectOption[]>([]);
   const [selectedCommitteeStaffIds, setSelectedCommitteeStaffIds] = useState<string[]>(draft?.committeeStaffIds || []);
 
+  // Guests (lobby_team type)
+  const [guests, setGuests] = useState<{ name: string; organization: string }[]>(draft?.guests || []);
+
   // Chamber filter for legislator picker
   const [chamberFilter, setChamberFilter] = useState('');
 
@@ -289,8 +293,9 @@ const EngagementForm: React.FC = () => {
       legStaffIds: selectedLegStaffIds,
       committeeOfficeId: selectedCommitteeOfficeId,
       committeeStaffIds: selectedCommitteeStaffIds,
+      guests,
     });
-  }, [formData, selectedBillIds, selectedStaffIds, selectedContactIds,
+  }, [formData, selectedBillIds, selectedStaffIds, selectedContactIds, guests,
       selectedLegislatorIds, selectedLegStaffIds, selectedCommitteeOfficeId,
       selectedCommitteeStaffIds, isEditing]);
 
@@ -517,6 +522,11 @@ const EngagementForm: React.FC = () => {
       setSelectedCommitteeOfficeId(data.committee_office_id);
     }
 
+    // Restore guests
+    if (data.guests && Array.isArray(data.guests)) {
+      setGuests(data.guests);
+    }
+
     // Fetch all junction data
     const [billJunc, staffJunc, contactJunc, legJunc, legStaffJunc] = await Promise.all([
       supabase.from('ga_engagement_bills').select('bill_id').eq('engagement_id', id),
@@ -569,6 +579,7 @@ const EngagementForm: React.FC = () => {
       meeting_location: formData.meeting_location || null,
       meeting_location_detail: formData.meeting_location_detail || null,
       committee_office_id: formData.type === 'committee_meeting' ? selectedCommitteeOfficeId || null : null,
+      guests: formData.type === 'lobby_team' ? guests.filter((g) => g.name.trim()) : [],
       follow_up_required: formData.follow_up_required,
       follow_up_date: formData.follow_up_required ? formData.follow_up_date || null : null,
       follow_up_notes: formData.follow_up_required ? formData.follow_up_notes || null : null,
@@ -964,6 +975,48 @@ const EngagementForm: React.FC = () => {
               emptyMessage="No contacts linked to PSG or WCS"
             />
           </div>
+
+          {/* Guests (lobby_team only) */}
+          {formData.type === 'lobby_team' && (
+            <div className="border-t border-gray-100 pt-3 mt-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Guests</span>
+              <div className="mt-2 space-y-2">
+                {guests.map((g, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={g.name}
+                      onChange={(e) => setGuests((prev) => prev.map((p, j) => j === i ? { ...p, name: e.target.value } : p))}
+                      placeholder="Name"
+                      className={`${inputClass} flex-1`}
+                    />
+                    <input
+                      type="text"
+                      value={g.organization}
+                      onChange={(e) => setGuests((prev) => prev.map((p, j) => j === i ? { ...p, organization: e.target.value } : p))}
+                      placeholder="Organization"
+                      className={`${inputClass} flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setGuests((prev) => prev.filter((_, j) => j !== i))}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setGuests((prev) => [...prev, { name: '', organization: '' }])}
+                  className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Guest
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ─── Card 2: Initiative + Bills + Notes + Follow-up ─── */}

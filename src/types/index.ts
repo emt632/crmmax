@@ -505,6 +505,7 @@ export interface GAEngagement {
   committee_office_id?: string;
   meeting_location?: string;
   meeting_location_detail?: string;
+  guests?: { name: string; organization: string }[];
   created_by: string;
   created_at: string;
   updated_at: string;
