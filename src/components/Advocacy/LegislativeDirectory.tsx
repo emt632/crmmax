@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookUser, Search, Plus, ChevronDown, ChevronRight,
   Edit2, Trash2, Loader2, Download, UserCircle, Gavel,
-  Phone, Mail, MapPin, Save, X, Sparkles, GitMerge,
+  Phone, Mail, MapPin, Save, X, Sparkles, GitMerge, Camera,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { US_STATES } from '../../lib/bill-format';
 import { useAuth } from '../../contexts/AuthContext';
 import type { LegislativeOffice, LegislativeOfficeStaff } from '../../types';
 import { exportDirectoryCSV, allStaffToVCardFile, downloadFile } from '../../lib/leg-staff-export';
@@ -57,9 +58,12 @@ function getStateBorder(state?: string): string {
 // Strip all title/office prefixes to get just the person's name
 function stripName(name: string): string {
   return name
-    .replace(/^Office of\s+(Sen\.\s*|Rep\.\s*|Senator\s+|Representative\s+)?/i, '')
+    .replace(/^Office of\s+(Sen\.\s*|Rep\.\s*|Senator\s+|Representative\s+|Congressman\s+|Congresswoman\s+)?/i, '')
     .replace(/^Senator\s+/i, '')
     .replace(/^Representative\s+/i, '')
+    .replace(/^Congressman\s+/i, '')
+    .replace(/^Congresswoman\s+/i, '')
+    .replace(/^Congressperson\s+/i, '')
     .replace(/^Sen\.\s*/i, '')
     .replace(/^Rep\.\s*/i, '')
     .trim();
@@ -91,12 +95,18 @@ const LegislativeDirectory: React.FC = () => {
   const [showAddStaffForOffice, setShowAddStaffForOffice] = useState<LegislativeOffice | null>(null);
   const [showSmartCapture, setShowSmartCapture] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
+  const [scanCardForOffice, setScanCardForOffice] = useState<LegislativeOffice | null>(null);
   const [stateFilter, setStateFilter] = useState<string>(''); // empty = all
 
   // Inline edit state
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [editStaffData, setEditStaffData] = useState<Partial<LegislativeOfficeStaff>>({});
   const [savingStaff, setSavingStaff] = useState(false);
+
+  // Inline edit state for offices
+  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
+  const [editOfficeData, setEditOfficeData] = useState<Partial<LegislativeOffice>>({});
+  const [savingOffice, setSavingOffice] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -233,6 +243,49 @@ const LegislativeDirectory: React.FC = () => {
     }
     setSavingStaff(false);
     setEditingStaffId(null);
+  };
+
+  const startEditOffice = (office: LegislativeOffice) => {
+    setEditingOfficeId(office.id);
+    setEditOfficeData({
+      name: office.name,
+      state: office.state || '',
+      chamber: office.chamber || '',
+      district: office.district || '',
+      phone: office.phone || '',
+      email: office.email || '',
+      address: office.address || '',
+      city: office.city || '',
+      office_state: office.office_state || '',
+      zip: office.zip || '',
+    });
+  };
+
+  const saveEditOffice = async (officeId: string) => {
+    setSavingOffice(true);
+    const { data, error } = await supabase
+      .from('legislative_offices')
+      .update({
+        name: (editOfficeData.name as string)?.trim() || '',
+        state: (editOfficeData.state as string) || null,
+        chamber: (editOfficeData.chamber as string) || null,
+        district: (editOfficeData.district as string)?.trim() || null,
+        phone: (editOfficeData.phone as string)?.trim() || null,
+        email: (editOfficeData.email as string)?.trim() || null,
+        address: (editOfficeData.address as string)?.trim() || null,
+        city: (editOfficeData.city as string)?.trim() || null,
+        office_state: (editOfficeData.office_state as string) || null,
+        zip: (editOfficeData.zip as string)?.trim() || null,
+      })
+      .eq('id', officeId)
+      .select('*')
+      .single();
+
+    if (!error && data) {
+      setOffices((prev) => prev.map((o) => o.id === officeId ? data as LegislativeOffice : o));
+    }
+    setSavingOffice(false);
+    setEditingOfficeId(null);
   };
 
   const handleExportCSV = () => {
@@ -415,50 +468,137 @@ const LegislativeDirectory: React.FC = () => {
                     className={`border border-gray-200 rounded-lg overflow-hidden border-l-4 ${getStateBorder(office.state)}`}
                   >
                     {/* Office header */}
-                    <div
-                      className="flex items-center gap-3 px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => toggleExpand(office.id)}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {office.state && (
-                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${getStateColor(office.state)}`}>{office.state}</span>
-                          )}
-                          <span className="font-medium text-sm text-gray-900 truncate">
-                            {office.office_type === 'legislator' ? displayOfficeName(office.name, office.chamber) : office.name}
-                          </span>
-                          {office.district && (
-                            <span className="text-xs text-gray-500 flex-shrink-0">District {office.district}</span>
-                          )}
+                    {editingOfficeId === office.id ? (
+                      <div className="px-4 py-3 bg-gray-50 space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="sm:col-span-3">
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Office Name</label>
+                            <input value={editOfficeData.name || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, name: e.target.value }))} className={inputClass} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">State</label>
+                            <select value={editOfficeData.state || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, state: e.target.value }))} className={inputClass}>
+                              <option value="">Select...</option>
+                              {US_STATES.map((s) => (
+                                <option key={s.value} value={s.value}>{s.label} ({s.value})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Chamber</label>
+                            <select value={editOfficeData.chamber || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, chamber: e.target.value }))} className={inputClass}>
+                              <option value="">Select...</option>
+                              <option value="senate">Senate</option>
+                              <option value="house">House</option>
+                              <option value="assembly">Assembly</option>
+                              <option value="joint">Joint</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">District</label>
+                            <input value={editOfficeData.district || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, district: e.target.value }))} className={inputClass} />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
-                          {office.phone && (
-                            <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{office.phone}</span>
-                          )}
-                          {office.email && (
-                            <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{office.email}</span>
-                          )}
-                          {office.address && (
-                            <span className="hidden sm:flex items-center gap-1"><MapPin className="w-3 h-3" />{office.address}{office.city ? `, ${office.city}` : ''}</span>
-                          )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Phone</label>
+                            <input value={editOfficeData.phone || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, phone: e.target.value }))} className={inputClass} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Email</label>
+                            <input value={editOfficeData.email || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, email: e.target.value }))} className={inputClass} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Address</label>
+                            <input value={editOfficeData.address || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, address: e.target.value }))} className={inputClass} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">City</label>
+                            <input value={editOfficeData.city || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, city: e.target.value }))} className={inputClass} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-0.5">Zip</label>
+                            <input value={editOfficeData.zip || ''} onChange={(e) => setEditOfficeData((p) => ({ ...p, zip: e.target.value }))} className={inputClass} />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => saveEditOffice(office.id)}
+                            disabled={savingOffice || !editOfficeData.name?.trim()}
+                            className="flex items-center gap-1 px-3 py-2 sm:py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                          >
+                            {savingOffice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
+                          </button>
+                          <button
+                            onClick={() => setEditingOfficeId(null)}
+                            className="px-3 py-2 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-xs text-gray-400 mr-2">{staff.length} staff</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteOffice(office); }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete office"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    ) : (
+                      <div
+                        className="flex items-center gap-3 px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleExpand(office.id)}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {office.state && (
+                              <span className={`text-xs font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${getStateColor(office.state)}`}>{office.state}</span>
+                            )}
+                            <span className="font-medium text-sm text-gray-900 truncate">
+                              {office.office_type === 'legislator' ? displayOfficeName(office.name, office.chamber) : office.name}
+                            </span>
+                            {office.district && (
+                              <span className="text-xs text-gray-500 flex-shrink-0">District {office.district}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
+                            {office.phone && (
+                              <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{office.phone}</span>
+                            )}
+                            {office.email && (
+                              <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{office.email}</span>
+                            )}
+                            {office.address && (
+                              <span className="hidden sm:flex items-center gap-1"><MapPin className="w-3 h-3" />{office.address}{office.city ? `, ${office.city}` : ''}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-xs text-gray-400 mr-2">{staff.length} staff</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setScanCardForOffice(office); }}
+                            className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                            title="Scan card to add details"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEditOffice(office); }}
+                            className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                            title="Edit office"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteOffice(office); }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete office"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Staff list */}
                     {isExpanded && (
@@ -682,6 +822,34 @@ const LegislativeDirectory: React.FC = () => {
             setShowSmartCapture(false);
           }}
           onClose={() => setShowSmartCapture(false)}
+        />
+      )}
+
+      {scanCardForOffice && user && (
+        <SmartCaptureLegStaffModal
+          isOpen={!!scanCardForOffice}
+          existingOffices={offices}
+          userId={user.id}
+          targetOffice={scanCardForOffice}
+          onCreated={(staff, office) => {
+            setOffices((prev) => {
+              const idx = prev.findIndex((o) => o.id === office.id);
+              if (idx >= 0) {
+                const updated = [...prev];
+                updated[idx] = office;
+                return updated;
+              }
+              return [...prev, office].sort((a, b) => a.name.localeCompare(b.name));
+            });
+            if (staff) {
+              setStaffMap((prev) => ({
+                ...prev,
+                [office.id]: [...(prev[office.id] || []), staff],
+              }));
+            }
+            setScanCardForOffice(null);
+          }}
+          onClose={() => setScanCardForOffice(null)}
         />
       )}
 

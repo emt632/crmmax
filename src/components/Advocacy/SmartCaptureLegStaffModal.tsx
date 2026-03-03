@@ -11,6 +11,7 @@ interface SmartCaptureLegStaffModalProps {
   onCreated: (staff: LegislativeOfficeStaff | null, office: LegislativeOffice) => void;
   existingOffices: LegislativeOffice[];
   userId: string;
+  targetOffice?: LegislativeOffice;
 }
 
 const SYSTEM_PROMPT = `You are a legislative staff information extractor. Given text from a business card, email signature, or staff directory, extract structured information. The card may belong to a legislator themselves OR to one of their staff members.
@@ -46,9 +47,12 @@ const inputClass = 'w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm
 // Strip title/office prefixes to get just the name
 function stripName(name: string): string {
   return name
-    .replace(/^Office of\s+(Sen\.\s*|Rep\.\s*|Senator\s+|Representative\s+)?/i, '')
+    .replace(/^Office of\s+(Sen\.\s*|Rep\.\s*|Senator\s+|Representative\s+|Congressman\s+|Congresswoman\s+)?/i, '')
     .replace(/^Senator\s+/i, '')
     .replace(/^Representative\s+/i, '')
+    .replace(/^Congressman\s+/i, '')
+    .replace(/^Congresswoman\s+/i, '')
+    .replace(/^Congressperson\s+/i, '')
     .replace(/^Sen\.\s*/i, '')
     .replace(/^Rep\.\s*/i, '')
     .trim();
@@ -81,6 +85,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
   onCreated,
   existingOffices,
   userId,
+  targetOffice,
 }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'image'>('text');
   const [signatureText, setSignatureText] = useState('');
@@ -135,8 +140,18 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     return existingOffices.filter((o) => fuzzyMatchOffice(o, officeSearchQuery));
   }, [existingOffices, officeSearchQuery]);
 
+  // Pre-configure when targetOffice is provided (scan card for specific office)
+  useEffect(() => {
+    if (targetOffice && isOpen) {
+      setIsLegislatorCard(true);
+      setMatchedOfficeId(targetOffice.id);
+      setCreateNewOffice(false);
+    }
+  }, [targetOffice, isOpen]);
+
   // Auto-match office when parsed data changes — fuzzy match on legislator name
   useEffect(() => {
+    if (targetOffice) return; // Skip auto-match when target is pre-selected
     if (parsedStaff.office_name && existingOffices.length > 0) {
       const q = parsedStaff.office_name.toLowerCase();
       const stripped = stripName(parsedStaff.office_name).toLowerCase();
@@ -468,7 +483,9 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
             )}
             <Sparkles className="w-5 h-5 text-teal-600" />
             <h2 className="text-lg font-semibold text-gray-900">
-              {phase === 'input' ? 'Smart Capture — Staff' : 'Review & Create'}
+              {phase === 'input'
+                ? (targetOffice ? 'Scan Card' : 'Smart Capture — Staff')
+                : (targetOffice ? 'Review & Update' : 'Review & Create')}
             </h2>
           </div>
           <button onClick={handleClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
