@@ -19,6 +19,26 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const TYPE_BADGE_COLORS = GA_ENGAGEMENT_TYPE_BADGE_COLORS;
 
+function stripName(name: string): string {
+  return name
+    .replace(/^Office of\s+(Sen\.\s*|Rep\.\s*|Senator\s+|Representative\s+|Congressman\s+|Congresswoman\s+)?/i, '')
+    .replace(/^Senator\s+/i, '')
+    .replace(/^Representative\s+/i, '')
+    .replace(/^Congressman\s+/i, '')
+    .replace(/^Congresswoman\s+/i, '')
+    .replace(/^Sen\.\s*/i, '')
+    .replace(/^Rep\.\s*/i, '')
+    .trim();
+}
+
+function formatOfficeName(name: string, chamber?: string): string {
+  const clean = stripName(name);
+  const c = (chamber || '').toLowerCase();
+  if (c === 'senate' || c === 'sen') return `Senator ${clean}`;
+  if (c === 'house' || c === 'assembly' || c === 'rep') return `Representative ${clean}`;
+  return clean || name;
+}
+
 const EngagementsList: React.FC = () => {
   const { hasModule, effectiveUserId } = useAuth();
 
@@ -28,9 +48,10 @@ const EngagementsList: React.FC = () => {
   const [filterType, setFilterType] = useState('');
   const [filterScope, setFilterScope] = useState<'all' | 'mine'>('all');
 
-  // Junction counts
+  // Junction counts & legislator names
   const [billCounts, setBillCounts] = useState<Record<string, number>>({});
   const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
+  const [legislatorNames, setLegislatorNames] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     fetchEngagements();
@@ -57,10 +78,11 @@ const EngagementsList: React.FC = () => {
     if (engList.length > 0) {
       const engIds = engList.map((e) => e.id);
 
-      const [billJunc, staffJunc, contactJunc] = await Promise.all([
+      const [billJunc, staffJunc, contactJunc, legJunc] = await Promise.all([
         supabase.from('ga_engagement_bills').select('engagement_id').in('engagement_id', engIds),
         supabase.from('ga_engagement_staff').select('engagement_id').in('engagement_id', engIds),
         supabase.from('ga_engagement_contacts').select('engagement_id').in('engagement_id', engIds),
+        supabase.from('ga_engagement_legislators').select('engagement_id, people_id').in('engagement_id', engIds),
       ]);
 
       const bCounts: Record<string, number> = {};
@@ -74,6 +96,32 @@ const EngagementsList: React.FC = () => {
         aCounts[r.engagement_id] = (aCounts[r.engagement_id] || 0) + 1;
       });
       setAttendeeCounts(aCounts);
+
+      // Build legislator office names per engagement
+      const legRows = legJunc.data || [];
+      if (legRows.length > 0) {
+        const peopleIds = [...new Set(legRows.map((r: any) => r.people_id))];
+        const { data: officeData } = await supabase
+          .from('legislative_offices')
+          .select('name, chamber, legislator_people_id')
+          .in('legislator_people_id', peopleIds);
+
+        const officeByPeopleId: Record<number, { name: string; chamber?: string }> = {};
+        for (const o of (officeData || []) as any[]) {
+          officeByPeopleId[o.legislator_people_id] = { name: o.name, chamber: o.chamber };
+        }
+
+        const nameMap: Record<string, string[]> = {};
+        for (const r of legRows as any[]) {
+          const office = officeByPeopleId[r.people_id];
+          if (office) {
+            const display = formatOfficeName(office.name, office.chamber);
+            if (!nameMap[r.engagement_id]) nameMap[r.engagement_id] = [];
+            nameMap[r.engagement_id].push(display);
+          }
+        }
+        setLegislatorNames(nameMap);
+      }
     }
 
     setLoading(false);
@@ -84,8 +132,10 @@ const EngagementsList: React.FC = () => {
     if (filterScope === 'mine' && e.created_by !== effectiveUserId) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
+      const legNames = (legislatorNames[e.id] || []).join(' ').toLowerCase();
       return (
         e.subject.toLowerCase().includes(q) ||
+        legNames.includes(q) ||
         (e.legislator_name || '').toLowerCase().includes(q) ||
         (e.association_name || '').toLowerCase().includes(q) ||
         (e.entity_name || '').toLowerCase().includes(q)
@@ -96,7 +146,7 @@ const EngagementsList: React.FC = () => {
 
   const getEntityDisplay = (e: GAEngagement): string => {
     switch (e.type) {
-      case 'legislator_office': return e.legislator_name || '';
+      case 'legislator_office': return (legislatorNames[e.id] || []).join(', ') || e.legislator_name || '';
       case 'ga_committee': return e.association_name || '';
       case 'federal_state_entity': return e.entity_name || '';
       default: return '';
@@ -215,6 +265,15 @@ const EngagementsList: React.FC = () => {
                         {eng.jurisdiction && (
                           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                             {eng.jurisdiction}
+                          </span>
+                        )}
+                        {eng.type === 'legislator_office' && eng.meeting_level && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            eng.meeting_level === 'member'
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {eng.meeting_level === 'member' ? 'Member' : 'Staff'}
                           </span>
                         )}
                       </div>
