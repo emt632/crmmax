@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Save, Plus, Edit2, UserCheck, UserX } from 'lucide-react';
+import { X, Loader2, Save, Plus, Edit2, UserCheck, UserX, Camera } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { LegislativeOfficeStaff, LegiscanLegislator, LegislativeOffice } from '../../types';
+import SmartCaptureLegStaffModal from './SmartCaptureLegStaffModal';
 
 interface ManageLegStaffModalProps {
   legislators: LegiscanLegislator[];
@@ -28,6 +29,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
   const [addForm, setAddForm] = useState({ first_name: '', last_name: '', title: '', email: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [scanCardForOffice, setScanCardForOffice] = useState<LegislativeOffice | null>(null);
 
   useEffect(() => {
     loadData();
@@ -267,6 +269,13 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                       </button>
                     )}
                     <button
+                      onClick={() => setScanCardForOffice(office)}
+                      className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      Scan
+                    </button>
+                    <button
                       onClick={() => {
                         setAddingForOffice(office.id);
                         setAddForm({ first_name: '', last_name: '', title: '', email: '', phone: '' });
@@ -285,13 +294,11 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                     <div className="px-4 py-4 text-center">
                       <p className="text-sm text-gray-400">No staff on file</p>
                       <button
-                        onClick={() => {
-                          setAddingForOffice(office.id);
-                          setAddForm({ first_name: '', last_name: '', title: '', email: '', phone: '' });
-                        }}
-                        className="mt-1 text-xs text-teal-600 hover:text-teal-800"
+                        onClick={() => setScanCardForOffice(office)}
+                        className="mt-1 text-xs text-teal-600 hover:text-teal-800 flex items-center gap-1 mx-auto"
                       >
-                        Add from business card or signature block
+                        <Camera className="w-3 h-3" />
+                        Scan business card or signature block
                       </button>
                     </div>
                   )}
@@ -448,6 +455,26 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
           </button>
         </div>
       </div>
+
+      {scanCardForOffice && (
+        <SmartCaptureLegStaffModal
+          isOpen={!!scanCardForOffice}
+          existingOffices={offices}
+          userId={userId}
+          targetOffice={scanCardForOffice}
+          defaultIsLegislatorCard={false}
+          onCreated={(staff, office) => {
+            if (staff) {
+              setStaffByOffice(prev => ({
+                ...prev,
+                [office.id]: [...(prev[office.id] || []), staff],
+              }));
+            }
+            setScanCardForOffice(null);
+          }}
+          onClose={() => setScanCardForOffice(null)}
+        />
+      )}
     </div>
   );
 };
