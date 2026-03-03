@@ -622,15 +622,23 @@ const LegislativeDirectory: React.FC = () => {
           existingOffices={offices}
           userId={user.id}
           onCreated={(staff, office) => {
-            // Add office if new
-            if (!offices.find((o) => o.id === office.id)) {
-              setOffices((prev) => [...prev, office].sort((a, b) => a.name.localeCompare(b.name)));
+            // Add or update office
+            setOffices((prev) => {
+              const idx = prev.findIndex((o) => o.id === office.id);
+              if (idx >= 0) {
+                const updated = [...prev];
+                updated[idx] = office;
+                return updated;
+              }
+              return [...prev, office].sort((a, b) => a.name.localeCompare(b.name));
+            });
+            // Add staff to map (if staff was created)
+            if (staff) {
+              setStaffMap((prev) => ({
+                ...prev,
+                [office.id]: [...(prev[office.id] || []), staff],
+              }));
             }
-            // Add staff to map
-            setStaffMap((prev) => ({
-              ...prev,
-              [office.id]: [...(prev[office.id] || []), staff],
-            }));
             setShowSmartCapture(false);
           }}
           onClose={() => setShowSmartCapture(false)}

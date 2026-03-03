@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  X, Sparkles, Camera, Upload, FileText, Check, ArrowLeft, Plus, Search,
+  X, Sparkles, Camera, Upload, FileText, Check, ArrowLeft, Plus, Search, Building2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { LegislativeOffice, LegislativeOfficeStaff } from '../../types';
@@ -8,22 +8,31 @@ import type { LegislativeOffice, LegislativeOfficeStaff } from '../../types';
 interface SmartCaptureLegStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (staff: LegislativeOfficeStaff, office: LegislativeOffice) => void;
+  onCreated: (staff: LegislativeOfficeStaff | null, office: LegislativeOffice) => void;
   existingOffices: LegislativeOffice[];
   userId: string;
 }
 
-const SYSTEM_PROMPT = `You are a legislative staff information extractor. Given text from a business card, email signature, or staff directory, extract structured legislative staff information. Return a JSON object with ONLY these fields (omit fields you cannot determine):
+const SYSTEM_PROMPT = `You are a legislative staff information extractor. Given text from a business card, email signature, or staff directory, extract structured information. The card may belong to a legislator themselves OR to one of their staff members.
+
+Return a JSON object with ONLY these fields (omit fields you cannot determine):
 {
-  "first_name": "string",
+  "first_name": "string (the person on the card)",
   "last_name": "string",
-  "title": "string (job title, e.g., Chief of Staff, Legislative Director)",
+  "title": "string (job title, e.g., Chief of Staff, Legislative Director, United States Senator)",
   "email": "string",
   "phone": "string",
-  "office_name": "string (committee or legislator office name, e.g., Senate Finance Committee, Senator John Smith)",
+  "office_name": "string (the legislator's full name with title, e.g., 'Senator John Smith', 'Representative Jane Doe' — NOT generic titles like 'United States Senator'. For committees use the committee name, e.g., 'Senate Finance Committee')",
   "state": "string (2-letter state abbreviation)",
-  "chamber": "string (senate, house, or assembly)"
+  "chamber": "string (senate, house, or assembly)",
+  "address": "string (street address)",
+  "city": "string",
+  "zip": "string",
+  "is_legislator": "boolean (true if the card belongs to the legislator/senator/representative themselves, false if it belongs to a staff member)"
 }
+
+IMPORTANT: If the card belongs to the legislator themselves (e.g., 'Senator John Hoeven'), set is_legislator to true. The office_name should still be their titled name (e.g., 'Senator John Hoeven'). The first_name and last_name should be the legislator's name.
+
 IMPORTANT casing rules:
 - Convert ALL CAPS text to proper Title Case (e.g. "JOHN SMITH" → "John Smith").
 - Preserve well-known abbreviations in uppercase: CEO, CFO, COO, CTO, VP, EVP, SVP, MD, RN, PhD, LLC, LLP, Inc, Jr, Sr, II, III, IV, SE, NE, NW, SW, STE, APT, FL, PO.
@@ -87,8 +96,10 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     first_name: string; last_name: string; title: string;
     email: string; phone: string;
     office_name: string; state: string; chamber: string;
-  }>({ first_name: '', last_name: '', title: '', email: '', phone: '', office_name: '', state: '', chamber: '' });
+    address: string; city: string; zip: string;
+  }>({ first_name: '', last_name: '', title: '', email: '', phone: '', office_name: '', state: '', chamber: '', address: '', city: '', zip: '' });
 
+  const [isLegislatorCard, setIsLegislatorCard] = useState(false);
   const [matchedOfficeId, setMatchedOfficeId] = useState<string>('');
   const [createNewOffice, setCreateNewOffice] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -142,7 +153,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
         setCreateNewOffice(false);
       } else {
         setMatchedOfficeId('');
-        setCreateNewOffice(false); // Don't auto-create — let user pick
+        setCreateNewOffice(true); // Auto-show create form so user can edit
       }
     }
   }, [parsedStaff.office_name, existingOffices]);
@@ -155,7 +166,8 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     setParsing(false);
     setError('');
     setPhase('input');
-    setParsedStaff({ first_name: '', last_name: '', title: '', email: '', phone: '', office_name: '', state: '', chamber: '' });
+    setParsedStaff({ first_name: '', last_name: '', title: '', email: '', phone: '', office_name: '', state: '', chamber: '', address: '', city: '', zip: '' });
+    setIsLegislatorCard(false);
     setMatchedOfficeId('');
     setCreateNewOffice(false);
     setOfficeSearchQuery('');
@@ -199,7 +211,13 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
       office_name: parsed.office_name || '',
       state: parsed.state || '',
       chamber: parsed.chamber || '',
+      address: parsed.address || '',
+      city: parsed.city || '',
+      zip: parsed.zip || '',
     });
+    if (parsed.is_legislator) {
+      setIsLegislatorCard(true);
+    }
     setPhase('preview');
   };
 
@@ -311,7 +329,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (!parsedStaff.first_name.trim() || !parsedStaff.last_name.trim()) {
+    if (!isLegislatorCard && (!parsedStaff.first_name.trim() || !parsedStaff.last_name.trim())) {
       setError('First and last name are required.');
       return;
     }
@@ -323,6 +341,62 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
       let officeId = matchedOfficeId;
       let office: LegislativeOffice;
 
+      const officeContactFields = {
+        phone: parsedStaff.phone.trim() || null,
+        email: parsedStaff.email.trim() || null,
+        address: parsedStaff.address.trim() || null,
+        city: parsedStaff.city.trim() || null,
+        office_state: parsedStaff.state || null,
+        zip: parsedStaff.zip.trim() || null,
+      };
+
+      if (isLegislatorCard) {
+        // Legislator's own card — create or update office with contact info
+        const officeName = parsedStaff.office_name.trim() || `${parsedStaff.first_name} ${parsedStaff.last_name}`.trim();
+        if (!officeName) {
+          setError('Office name is required.');
+          setSaving(false);
+          return;
+        }
+
+        if (matchedOfficeId) {
+          // Update existing office with contact info from card
+          const { data: updated, error: updErr } = await supabase
+            .from('legislative_offices')
+            .update(officeContactFields)
+            .eq('id', matchedOfficeId)
+            .select('*')
+            .single();
+
+          if (updErr || !updated) throw new Error('Failed to update office');
+          office = updated as LegislativeOffice;
+        } else {
+          // Create new office with contact info
+          const officeType = officeName.toLowerCase().includes('committee') ? 'committee' : 'legislator';
+          const { data: newOffice, error: offErr } = await supabase
+            .from('legislative_offices')
+            .insert({
+              office_type: officeType,
+              name: officeName,
+              state: parsedStaff.state || null,
+              chamber: parsedStaff.chamber || null,
+              created_by: userId,
+              ...officeContactFields,
+            })
+            .select('*')
+            .single();
+
+          if (offErr || !newOffice) throw new Error('Failed to create office');
+          office = newOffice as LegislativeOffice;
+        }
+
+        onCreated(null, office);
+        resetState();
+        onClose();
+        return;
+      }
+
+      // Staff card flow
       if (createNewOffice && parsedStaff.office_name.trim()) {
         // Create new office
         const officeType = parsedStaff.office_name.toLowerCase().includes('committee') ? 'committee' : 'legislator';
@@ -537,60 +611,234 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
           {/* PREVIEW PHASE */}
           {phase === 'preview' && (
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Staff fields */}
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Staff Information</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">First Name *</label>
-                    <input
-                      value={parsedStaff.first_name}
-                      onChange={(e) => setParsedStaff((p) => ({ ...p, first_name: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Last Name *</label>
-                    <input
-                      value={parsedStaff.last_name}
-                      onChange={(e) => setParsedStaff((p) => ({ ...p, last_name: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Title</label>
-                  <input
-                    value={parsedStaff.title}
-                    onChange={(e) => setParsedStaff((p) => ({ ...p, title: e.target.value }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={parsedStaff.email}
-                      onChange={(e) => setParsedStaff((p) => ({ ...p, email: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Phone</label>
-                    <input
-                      type="tel"
-                      value={parsedStaff.phone}
-                      onChange={(e) => setParsedStaff((p) => ({ ...p, phone: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
+              {/* Card type toggle */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => setIsLegislatorCard(false)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    !isLegislatorCard ? 'bg-white shadow-sm text-teal-700 ring-1 ring-teal-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Staff Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLegislatorCard(true)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isLegislatorCard ? 'bg-white shadow-sm text-teal-700 ring-1 ring-teal-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Legislator Card
+                </button>
               </div>
 
-              {/* Office assignment */}
-              <div className="space-y-3 border-t border-gray-200 pt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Link to Legislator / Office</p>
+              {isLegislatorCard ? (
+                <>
+                  {/* Legislator card — office info */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Office Information</p>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Office Name *</label>
+                      <input
+                        value={parsedStaff.office_name}
+                        onChange={(e) => setParsedStaff((p) => ({ ...p, office_name: e.target.value }))}
+                        placeholder="e.g., Senator John Hoeven"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">State</label>
+                        <input
+                          value={parsedStaff.state}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, state: e.target.value }))}
+                          placeholder="e.g., ND"
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Chamber</label>
+                        <select
+                          value={parsedStaff.chamber}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, chamber: e.target.value }))}
+                          className={inputClass}
+                        >
+                          <option value="">Select...</option>
+                          <option value="senate">Senate</option>
+                          <option value="house">House</option>
+                          <option value="assembly">Assembly</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Office Phone</label>
+                        <input
+                          type="tel"
+                          value={parsedStaff.phone}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, phone: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Office Email</label>
+                        <input
+                          type="email"
+                          value={parsedStaff.email}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, email: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Street Address</label>
+                      <input
+                        value={parsedStaff.address}
+                        onChange={(e) => setParsedStaff((p) => ({ ...p, address: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">City</label>
+                        <input
+                          value={parsedStaff.city}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, city: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Zip</label>
+                        <input
+                          value={parsedStaff.zip}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, zip: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match to existing or create new */}
+                  <div className="space-y-3 border-t border-gray-200 pt-4">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Link to Existing Office?</p>
+                    <div ref={officeSearchRef} className="relative">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={officeSearchQuery}
+                          onChange={(e) => { setOfficeSearchQuery(e.target.value); setShowOfficeDropdown(true); }}
+                          onFocus={() => setShowOfficeDropdown(true)}
+                          placeholder="Search to update existing office, or leave empty to create new"
+                          className={`${inputClass} pl-9`}
+                        />
+                      </div>
+                      {showOfficeDropdown && (
+                        <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {filteredOffices.map((o) => (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => {
+                                setMatchedOfficeId(o.id);
+                                setOfficeSearchQuery('');
+                                setShowOfficeDropdown(false);
+                              }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-teal-50 transition-colors ${
+                                matchedOfficeId === o.id ? 'bg-teal-50' : ''
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm text-gray-900">{displayOfficeName(o)}</span>
+                              </div>
+                              {matchedOfficeId === o.id && <Check className="w-4 h-4 text-teal-600 flex-shrink-0" />}
+                            </button>
+                          ))}
+                          {filteredOffices.length === 0 && (
+                            <div className="px-3 py-3 text-xs text-gray-400 text-center">No offices match</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {matchedOfficeId && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+                        <p className="text-xs text-green-700 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          Will update: <strong>{displayOfficeName(existingOffices.find((o) => o.id === matchedOfficeId)!)}</strong>
+                        </p>
+                        <button onClick={() => setMatchedOfficeId('')} className="text-green-600 hover:text-green-800">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                    {!matchedOfficeId && (
+                      <div className="bg-teal-50 border border-teal-200 rounded-lg p-2">
+                        <p className="text-xs text-teal-700 flex items-center gap-1">
+                          <Plus className="w-3 h-3" />
+                          Will create a new office
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Staff card — existing flow */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Staff Information</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">First Name *</label>
+                        <input
+                          value={parsedStaff.first_name}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, first_name: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Last Name *</label>
+                        <input
+                          value={parsedStaff.last_name}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, last_name: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Title</label>
+                      <input
+                        value={parsedStaff.title}
+                        onChange={(e) => setParsedStaff((p) => ({ ...p, title: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={parsedStaff.email}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, email: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Phone</label>
+                        <input
+                          type="tel"
+                          value={parsedStaff.phone}
+                          onChange={(e) => setParsedStaff((p) => ({ ...p, phone: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Office assignment */}
+                  <div className="space-y-3 border-t border-gray-200 pt-4">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Link to Legislator / Office</p>
 
                 {/* Searchable office picker */}
                 <div ref={officeSearchRef} className="relative">
@@ -704,6 +952,8 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
                   </div>
                 )}
               </div>
+                </>
+              )}
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3">
@@ -767,7 +1017,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
           {phase === 'preview' && (
             <button
               onClick={handleConfirm}
-              disabled={saving || !parsedStaff.first_name.trim() || !parsedStaff.last_name.trim() || (!matchedOfficeId && !createNewOffice)}
+              disabled={saving || (isLegislatorCard ? !parsedStaff.office_name.trim() : (!parsedStaff.first_name.trim() || !parsedStaff.last_name.trim() || (!matchedOfficeId && !createNewOffice)))}
               className="px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center transition-colors text-sm font-medium"
             >
               {saving ? (
