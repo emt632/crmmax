@@ -12,6 +12,7 @@ interface SmartCaptureLegStaffModalProps {
   existingOffices: LegislativeOffice[];
   userId: string;
   targetOffice?: LegislativeOffice;
+  defaultIsLegislatorCard?: boolean;
 }
 
 const SYSTEM_PROMPT = `You are a legislative staff information extractor. Given text from a business card, email signature, or staff directory, extract structured information. The card may belong to a legislator themselves OR to one of their staff members.
@@ -86,6 +87,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
   existingOffices,
   userId,
   targetOffice,
+  defaultIsLegislatorCard,
 }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'image'>('text');
   const [signatureText, setSignatureText] = useState('');
@@ -143,11 +145,11 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
   // Pre-configure when targetOffice is provided (scan card for specific office)
   useEffect(() => {
     if (targetOffice && isOpen) {
-      setIsLegislatorCard(true);
+      setIsLegislatorCard(defaultIsLegislatorCard ?? true);
       setMatchedOfficeId(targetOffice.id);
       setCreateNewOffice(false);
     }
-  }, [targetOffice, isOpen]);
+  }, [targetOffice, isOpen, defaultIsLegislatorCard]);
 
   // Auto-match office when parsed data changes — fuzzy match on legislator name
   useEffect(() => {

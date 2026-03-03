@@ -95,7 +95,7 @@ const LegislativeDirectory: React.FC = () => {
   const [showAddStaffForOffice, setShowAddStaffForOffice] = useState<LegislativeOffice | null>(null);
   const [showSmartCapture, setShowSmartCapture] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
-  const [scanCardForOffice, setScanCardForOffice] = useState<LegislativeOffice | null>(null);
+  const [smartCaptureTarget, setSmartCaptureTarget] = useState<{ office: LegislativeOffice; mode: 'legislator' | 'staff' } | null>(null);
   const [stateFilter, setStateFilter] = useState<string>(''); // empty = all
 
   // Inline edit state
@@ -576,9 +576,9 @@ const LegislativeDirectory: React.FC = () => {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span className="text-xs text-gray-400 mr-2">{staff.length} staff</span>
                           <button
-                            onClick={(e) => { e.stopPropagation(); setScanCardForOffice(office); }}
+                            onClick={(e) => { e.stopPropagation(); setSmartCaptureTarget({ office, mode: 'legislator' }); }}
                             className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                            title="Scan card to add details"
+                            title="Scan card to add office details"
                           >
                             <Camera className="w-3.5 h-3.5" />
                           </button>
@@ -749,13 +749,20 @@ const LegislativeDirectory: React.FC = () => {
                           </table>
                           </>
                         )}
-                        <div className="px-4 py-2 border-t border-gray-100">
+                        <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3">
                           <button
                             onClick={() => setShowAddStaffForOffice(office)}
                             className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
                           >
                             <Plus className="w-3 h-3" />
                             Add Staff
+                          </button>
+                          <button
+                            onClick={() => setSmartCaptureTarget({ office, mode: 'staff' })}
+                            className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
+                          >
+                            <Camera className="w-3 h-3" />
+                            Scan Card
                           </button>
                         </div>
                       </div>
@@ -825,12 +832,13 @@ const LegislativeDirectory: React.FC = () => {
         />
       )}
 
-      {scanCardForOffice && user && (
+      {smartCaptureTarget && user && (
         <SmartCaptureLegStaffModal
-          isOpen={!!scanCardForOffice}
+          isOpen={!!smartCaptureTarget}
           existingOffices={offices}
           userId={user.id}
-          targetOffice={scanCardForOffice}
+          targetOffice={smartCaptureTarget.office}
+          defaultIsLegislatorCard={smartCaptureTarget.mode === 'legislator'}
           onCreated={(staff, office) => {
             setOffices((prev) => {
               const idx = prev.findIndex((o) => o.id === office.id);
@@ -847,9 +855,9 @@ const LegislativeDirectory: React.FC = () => {
                 [office.id]: [...(prev[office.id] || []), staff],
               }));
             }
-            setScanCardForOffice(null);
+            setSmartCaptureTarget(null);
           }}
-          onClose={() => setScanCardForOffice(null)}
+          onClose={() => setSmartCaptureTarget(null)}
         />
       )}
 
