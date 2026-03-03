@@ -116,6 +116,7 @@ const LegislativeDirectory: React.FC = () => {
       const { data: staffData } = await supabase
         .from('legislative_office_staff')
         .select('*')
+        .neq('is_active', false)
         .order('last_name');
 
       const map: Record<string, LegislativeOfficeStaff[]> = {};
@@ -177,9 +178,9 @@ const LegislativeDirectory: React.FC = () => {
   };
 
   const handleDeleteOffice = async (office: LegislativeOffice) => {
-    if (!confirm(`Delete "${office.name}" and all its staff?`)) return;
-    // Delete staff first (FK constraint)
-    await supabase.from('legislative_office_staff').delete().eq('office_id', office.id);
+    if (!confirm(`Delete "${office.name}"? Staff will be deactivated to preserve historical records.`)) return;
+    // Soft-delete staff first to preserve engagement history
+    await supabase.from('legislative_office_staff').update({ is_active: false }).eq('office_id', office.id);
     await supabase.from('legislative_offices').delete().eq('id', office.id);
     setOffices((prev) => prev.filter((o) => o.id !== office.id));
     setStaffMap((prev) => {
@@ -190,8 +191,8 @@ const LegislativeDirectory: React.FC = () => {
   };
 
   const handleDeleteStaff = async (staffId: string, officeId: string) => {
-    if (!confirm('Delete this staff member?')) return;
-    await supabase.from('legislative_office_staff').delete().eq('id', staffId);
+    if (!confirm('Deactivate this staff member? They will be hidden but historical engagement records will be preserved.')) return;
+    await supabase.from('legislative_office_staff').update({ is_active: false }).eq('id', staffId);
     setStaffMap((prev) => ({
       ...prev,
       [officeId]: (prev[officeId] || []).filter((s) => s.id !== staffId),

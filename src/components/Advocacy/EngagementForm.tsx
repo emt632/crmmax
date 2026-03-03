@@ -14,6 +14,7 @@ import type { MultiSelectOption } from './MultiSelectDropdown';
 import QuickAddLegStaffModal from './QuickAddLegStaffModal';
 import QuickAddLegOfficeModal from './QuickAddLegOfficeModal';
 import QuickAddCommitteeStaffModal from './QuickAddCommitteeStaffModal';
+import ManageLegStaffModal from './ManageLegStaffModal';
 
 // ─── Initiative Multi-Combo (searchable, multi-select, allows adding new) ────
 interface InitiativeComboProps {
@@ -272,6 +273,7 @@ const EngagementForm: React.FC = () => {
 
   // Modal state
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showManageStaffModal, setShowManageStaffModal] = useState(false);
   const [showAddOfficeModal, setShowAddOfficeModal] = useState(false);
   const [showAddCommitteeStaffModal, setShowAddCommitteeStaffModal] = useState(false);
 
@@ -437,6 +439,7 @@ const EngagementForm: React.FC = () => {
       .from('legislative_office_staff')
       .select('*')
       .eq('office_id', officeId)
+      .neq('is_active', false)
       .order('last_name');
     const records = (data || []) as LegislativeOfficeStaff[];
     setCommitteeStaffOptions(
@@ -468,14 +471,16 @@ const EngagementForm: React.FC = () => {
       .in('office_id', officeIds)
       .order('last_name');
 
-    const records = (staffData || []) as LegislativeOfficeStaff[];
-    setLegStaffRecords(records);
+    const records = (staffData || []) as (LegislativeOfficeStaff & { is_active?: boolean })[];
+    setLegStaffRecords(records as LegislativeOfficeStaff[]);
     setLegStaffOptions(
-      records.map((s) => ({
-        value: s.id,
-        label: `${s.first_name} ${s.last_name}`,
-        sublabel: s.title || undefined,
-      }))
+      records
+        .filter((s) => s.is_active !== false)
+        .map((s) => ({
+          value: s.id,
+          label: `${s.first_name} ${s.last_name}`,
+          sublabel: s.title || undefined,
+        }))
     );
   };
 
@@ -827,14 +832,24 @@ const EngagementForm: React.FC = () => {
               {/* Legislative staff picker — visible when legislators selected */}
               {selectedLegislatorIds.length > 0 && (
                 <div>
-                  <label className={labelClass}>Legislative Staff Met</label>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className={labelClass}>Legislative Staff Met</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowManageStaffModal(true)}
+                      className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
+                    >
+                      <Users className="w-3 h-3" />
+                      Manage Staff
+                    </button>
+                  </div>
                   <MultiSelectDropdown
                     options={legStaffOptions}
                     selected={selectedLegStaffIds}
                     onChange={setSelectedLegStaffIds}
                     placeholder="Select staff..."
                     searchPlaceholder="Search staff..."
-                    emptyMessage="No staff on file for selected legislators"
+                    emptyMessage="No staff on file — use Manage Staff to add"
                     actionButton={
                       <button
                         type="button"
@@ -842,7 +857,7 @@ const EngagementForm: React.FC = () => {
                         className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 transition-colors"
                       >
                         <Plus className="w-3 h-3" />
-                        Add Staff
+                        Quick Add
                       </button>
                     }
                   />
@@ -1094,6 +1109,20 @@ const EngagementForm: React.FC = () => {
             setShowAddStaffModal(false);
           }}
           onClose={() => setShowAddStaffModal(false)}
+        />
+      )}
+
+      {showManageStaffModal && selectedLegislatorObjects.length > 0 && user && (
+        <ManageLegStaffModal
+          legislators={selectedLegislatorObjects}
+          userId={user.id}
+          onClose={() => {
+            setShowManageStaffModal(false);
+            // Refresh staff options to reflect any changes made in the modal
+            if (selectedLegislatorIds.length > 0) {
+              fetchLegStaffForLegislators(selectedLegislatorIds.map(Number));
+            }
+          }}
         />
       )}
 

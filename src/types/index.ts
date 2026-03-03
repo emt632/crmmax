@@ -569,6 +569,7 @@ export interface LegislativeOfficeStaff {
   title?: string;
   email?: string;
   phone?: string;
+  is_active: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
