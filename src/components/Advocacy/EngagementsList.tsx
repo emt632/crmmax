@@ -106,21 +106,21 @@ const EngagementsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-8 text-white shadow-sm">
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-8 text-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <Handshake className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <Handshake className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Engagements
             </h1>
-            <p className="mt-2 text-teal-200">{engagements.length} engagement{engagements.length !== 1 ? 's' : ''} logged</p>
+            <p className="mt-2 text-teal-200 text-sm sm:text-base">{engagements.length} engagement{engagements.length !== 1 ? 's' : ''} logged</p>
           </div>
           <Link
             to="/advocacy/engagements/new"
             className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Log Engagement
+            <span className="hidden sm:inline">Log Engagement</span>
           </Link>
         </div>
       </div>

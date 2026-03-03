@@ -575,42 +575,42 @@ const AdvocacyReports: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-8 text-white shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-8 text-white shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <FileBarChart className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <FileBarChart className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Legislative Activity Reports
             </h1>
-            <p className="mt-2 text-teal-100">Filter, analyze, and export engagement data</p>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-teal-100">Filter, analyze, and export engagement data</p>
           </div>
-          <div className="flex space-x-6 text-center">
+          <div className="grid grid-cols-3 gap-3 mt-3 sm:mt-0 sm:flex sm:space-x-6 text-center">
             <div>
-              <p className="text-2xl font-bold">{engagements.length}</p>
-              <p className="text-xs text-teal-200">Total Engagements</p>
+              <p className="text-lg sm:text-2xl font-bold">{engagements.length}</p>
+              <p className="text-xs text-teal-200">Total</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{filteredEngagements.length}</p>
+              <p className="text-lg sm:text-2xl font-bold">{filteredEngagements.length}</p>
               <p className="text-xs text-teal-200">Filtered</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{engagements.filter(e => e.follow_up_required && !e.follow_up_completed).length}</p>
-              <p className="text-xs text-teal-200">Open Follow-Ups</p>
+              <p className="text-lg sm:text-2xl font-bold">{engagements.filter(e => e.follow_up_required && !e.follow_up_completed).length}</p>
+              <p className="text-xs text-teal-200">Follow-Ups</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div className="flex items-center">
             <Filter className="w-5 h-5 text-gray-600 mr-2" />
             <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
-              Showing {filteredEngagements.length} of {engagements.length} engagements
+              Showing {filteredEngagements.length} of {engagements.length}
             </span>
             <button
               onClick={clearFilters}
@@ -786,9 +786,82 @@ const AdvocacyReports: React.FC = () => {
         </div>
       </div>
 
-      {/* Preview Table */}
+      {/* Preview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {previewData.map(e => {
+            const isExpanded = expandedRow === e.id;
+            const hasDetail = !!(e.notes || e.topics_covered || e.follow_up_notes || e.meeting_location_detail);
+            return (
+              <div
+                key={e.id}
+                className={`p-4 space-y-2 ${isExpanded ? 'bg-teal-50/30' : ''}`}
+                onClick={() => setExpandedRow(isExpanded ? null : e.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs text-gray-500">{e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : ''}</span>
+                  <div className="flex items-center gap-1.5">
+                    {e.follow_up_required && (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                        e.follow_up_completed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {e.follow_up_completed ? 'Done' : e.follow_up_date ? format(new Date(e.follow_up_date + 'T00:00:00'), 'MM/dd') : 'Pending'}
+                      </span>
+                    )}
+                    {hasDetail && <ChevronRight className={`w-3.5 h-3.5 text-teal-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />}
+                  </div>
+                </div>
+                <div>{renderEngagementCell(e)}</div>
+                {e.subject && <p className="text-sm text-gray-700 line-clamp-2">{e.subject}</p>}
+                <div className="flex flex-wrap gap-1.5 text-xs">
+                  {getJurisdictionLabel(e.jurisdiction) && (
+                    <span className="text-gray-500">{getJurisdictionLabel(e.jurisdiction)}</span>
+                  )}
+                  {e.initiative && <span className="text-gray-500">{e.initiative}</span>}
+                  {e.meeting_location && (
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-medium ${
+                      e.meeting_location === 'virtual' ? 'bg-blue-50 text-blue-700' :
+                      e.meeting_location === 'in_person' ? 'bg-green-50 text-green-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location}
+                    </span>
+                  )}
+                  {e.duration != null && <span className="text-gray-400">{e.duration}m</span>}
+                </div>
+                {e.bills.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {e.bills.map(b => (
+                      <span key={b.id} className="inline-block px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-xs">
+                        {formatBillNumber(b.bill_number)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {isExpanded && (
+                  <div className="pt-2 border-t border-gray-100 space-y-2 text-sm" onClick={(ev) => ev.stopPropagation()}>
+                    {e.notes && <div><span className="font-medium text-gray-700">Notes:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.notes}</p></div>}
+                    {e.topics_covered && <div><span className="font-medium text-gray-700">Topics:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.topics_covered}</p></div>}
+                    {e.meeting_location_detail && <div><span className="font-medium text-gray-700">Location:</span><p className="mt-0.5 text-gray-600">{e.meeting_location_detail}</p></div>}
+                    {e.follow_up_notes && <div><span className="font-medium text-gray-700">Follow-Up:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.follow_up_notes}</p></div>}
+                    {e.staff.length > 0 && <div><span className="font-medium text-gray-700">Staff:</span><span className="ml-1 text-gray-600">{e.staff.map(s => s.full_name || s.email).join(', ')}</span></div>}
+                    {e.contacts.length > 0 && <div><span className="font-medium text-gray-700">PSG:</span><span className="ml-1 text-gray-600">{e.contacts.map(c => `${c.first_name} ${c.last_name}`).join(', ')}</span></div>}
+                    {!e.notes && !e.topics_covered && !e.meeting_location_detail && !e.follow_up_notes && (
+                      <p className="text-gray-400 italic text-xs">No additional details</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {filteredEngagements.length === 0 && (
+            <div className="px-4 py-12 text-center text-gray-500 text-sm">No engagements match your filters</div>
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -956,7 +1029,7 @@ const AdvocacyReports: React.FC = () => {
       </div>
 
       {/* Export Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Export</h3>
 
         <div className="flex items-center mb-4">

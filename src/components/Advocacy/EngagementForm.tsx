@@ -686,7 +686,7 @@ const EngagementForm: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           {/* Engagement Type */}
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</span>
-          <div className="grid grid-cols-5 gap-2 mt-2 mb-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2 mb-4">
             {(Object.keys(GA_ENGAGEMENT_TYPE_LABELS) as GAEngagementType[]).map((type) => (
               <button
                 key={type}

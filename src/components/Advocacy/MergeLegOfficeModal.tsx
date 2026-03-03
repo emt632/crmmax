@@ -207,8 +207,8 @@ const MergeLegOfficeModal: React.FC<MergeLegOfficeModalProps> = ({
 
   if (duplicateGroups.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 text-center">
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+        <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-md p-6 text-center">
           <GitMerge className="w-10 h-10 mx-auto text-teal-600 mb-3" />
           <h3 className="text-sm font-semibold text-gray-900 mb-2">No Duplicates Found</h3>
           <p className="text-xs text-gray-500 mb-4">
@@ -226,8 +226,8 @@ const MergeLegOfficeModal: React.FC<MergeLegOfficeModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+      <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-2xl sm:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ const MergeLegOfficeModal: React.FC<MergeLegOfficeModalProps> = ({
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Merged Result Preview
                   </p>
-                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="text-gray-400 uppercase tracking-wide">

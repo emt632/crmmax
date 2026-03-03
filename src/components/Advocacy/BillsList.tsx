@@ -202,21 +202,21 @@ const BillsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-8 text-white shadow-sm">
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-8 text-white shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <ScrollText className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <ScrollText className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Bills
             </h1>
-            <p className="mt-2 text-teal-200">{bills.length} bill{bills.length !== 1 ? 's' : ''} tracked</p>
+            <p className="mt-2 text-teal-200 text-sm sm:text-base">{bills.length} bill{bills.length !== 1 ? 's' : ''} tracked</p>
           </div>
           <Link
             to="/advocacy/bills/new"
             className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Add Bill
+            <span className="hidden sm:inline">Add Bill</span>
           </Link>
         </div>
       </div>
@@ -352,11 +352,11 @@ const BillsList: React.FC = () => {
               return (
                 <div
                   key={bill.id}
-                  className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="flex items-center px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => navigate(`/advocacy/bills/${bill.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-semibold text-gray-900">
                         {formatBillNumber(bill.bill_number)}
                       </span>

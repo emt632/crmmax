@@ -91,8 +91,8 @@ const QuickAddLegStaffModal: React.FC<QuickAddLegStaffModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+      <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-md overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900">Add Legislative Staff</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -124,7 +124,7 @@ const QuickAddLegStaffModal: React.FC<QuickAddLegStaffModalProps> = ({
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>First Name *</label>
               <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass} />
@@ -140,7 +140,7 @@ const QuickAddLegStaffModal: React.FC<QuickAddLegStaffModalProps> = ({
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Chief of Staff" className={inputClass} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
@@ -153,14 +153,14 @@ const QuickAddLegStaffModal: React.FC<QuickAddLegStaffModalProps> = ({
         </div>
 
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="px-3 py-2 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || !firstName.trim() || !lastName.trim() || !selectedLegislatorId}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Add Staff

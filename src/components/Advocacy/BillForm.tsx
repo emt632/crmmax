@@ -233,7 +233,7 @@ const BillForm: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-8 text-white shadow-sm">
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-8 text-white shadow-sm">
         <button
           onClick={() => navigate('/advocacy/bills')}
           className="flex items-center text-teal-200 hover:text-white mb-4 transition-colors"
@@ -241,8 +241,8 @@ const BillForm: React.FC = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Bills
         </button>
-        <h1 className="text-3xl font-bold flex items-center">
-          <ScrollText className="w-8 h-8 mr-3" />
+        <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+          <ScrollText className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
           {isEditing ? 'Edit Bill' : 'New Bill'}
         </h1>
       </div>

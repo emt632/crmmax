@@ -340,30 +340,30 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="bg-blue-600 rounded-xl p-4 sm:p-8 text-white shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <FileBarChart className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <FileBarChart className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Reports
             </h1>
-            <p className="mt-2 text-blue-100">Filter, analyze, and export your CRM data</p>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-blue-100">Filter, analyze, and export your CRM data</p>
           </div>
-          <div className="flex space-x-6 text-center">
+          <div className="grid grid-cols-4 gap-3 mt-3 sm:mt-0 sm:flex sm:space-x-6 text-center">
             <div>
-              <p className="text-2xl font-bold">{contacts.length}</p>
+              <p className="text-lg sm:text-2xl font-bold">{contacts.length}</p>
               <p className="text-xs text-blue-200">Contacts</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{organizations.length}</p>
-              <p className="text-xs text-blue-200">Organizations</p>
+              <p className="text-lg sm:text-2xl font-bold">{organizations.length}</p>
+              <p className="text-xs text-blue-200">Orgs</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{contacts.filter(c => c.is_donor).length}</p>
+              <p className="text-lg sm:text-2xl font-bold">{contacts.filter(c => c.is_donor).length}</p>
               <p className="text-xs text-blue-200">Donors</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{contacts.filter(c => c.is_vip).length}</p>
+              <p className="text-lg sm:text-2xl font-bold">{contacts.filter(c => c.is_vip).length}</p>
               <p className="text-xs text-blue-200">VIPs</p>
             </div>
           </div>
@@ -393,13 +393,13 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div className="flex items-center">
             <Filter className="w-5 h-5 text-gray-600 mr-2" />
             <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
               Showing {filteredData.length} of {totalCount} {reportType}
             </span>
@@ -521,9 +521,75 @@ const Reports: React.FC = () => {
         )}
       </div>
 
-      {/* Results Table */}
+      {/* Results */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="sm:hidden divide-y divide-gray-100">
+          {reportType === 'contacts' ? (
+            filteredContacts.slice(0, 50).map(c => (
+              <div key={c.id} className="p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm text-gray-900">{c.first_name} {c.last_name}</span>
+                  <div className="flex space-x-1">
+                    {c.is_donor && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                        <Heart className="w-3 h-3 mr-0.5" />Donor
+                      </span>
+                    )}
+                    {c.is_vip && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                        <Star className="w-3 h-3 mr-0.5" />VIP
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {c.title && <p className="text-xs text-gray-500">{c.title}</p>}
+                {(c.email_work || c.email_personal) && <p className="text-xs text-gray-600">{c.email_work || c.email_personal}</p>}
+                {(c.phone_mobile || c.phone_office) && <p className="text-xs text-gray-600">{c.phone_mobile || c.phone_office}</p>}
+                {(c.city || c.state) && <p className="text-xs text-gray-400">{[c.city, c.state].filter(Boolean).join(', ')}</p>}
+                {getEntityTypes('contact', c.id).length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {getEntityTypes('contact', c.id).map(ct => (
+                      <span key={ct.id} className="inline-block px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: ct.color }}>{ct.name}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            filteredOrganizations.slice(0, 50).map(o => (
+              <div key={o.id} className="p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm text-gray-900">{o.name}</span>
+                  {o.is_donor && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                      <Heart className="w-3 h-3 mr-0.5" />Donor
+                    </span>
+                  )}
+                </div>
+                {o.type && <p className="text-xs text-gray-500">{o.type}</p>}
+                {o.email && <p className="text-xs text-gray-600">{o.email}</p>}
+                {o.phone && <p className="text-xs text-gray-600">{o.phone}</p>}
+                {(o.city || o.state) && <p className="text-xs text-gray-400">{[o.city, o.state].filter(Boolean).join(', ')}</p>}
+                {getEntityTypes('organization', o.id).length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {getEntityTypes('organization', o.id).map(ct => (
+                      <span key={ct.id} className="inline-block px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: ct.color }}>{ct.name}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+          {filteredData.length === 0 && (
+            <div className="px-4 py-12 text-center text-gray-500 text-sm">
+              No {reportType} match your filters
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               {reportType === 'contacts' ? (
@@ -636,7 +702,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Export Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Export</h3>
         <div className="flex flex-wrap gap-3">
           <button
@@ -645,7 +711,7 @@ const Reports: React.FC = () => {
             className="inline-flex items-center px-4 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Download className="w-4 h-4 mr-2" />
-            Export CSV
+            <span className="hidden sm:inline">Export </span>CSV
           </button>
           <button
             onClick={exportPDF}
@@ -653,9 +719,9 @@ const Reports: React.FC = () => {
             className="inline-flex items-center px-4 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <FileText className="w-4 h-4 mr-2" />
-            Export PDF
+            <span className="hidden sm:inline">Export </span>PDF
           </button>
-          <div className="border-l border-gray-300 mx-2" />
+          <div className="hidden sm:block border-l border-gray-300 mx-2" />
           {reportType === 'contacts' ? (
             <button
               onClick={exportGiveButterContacts}

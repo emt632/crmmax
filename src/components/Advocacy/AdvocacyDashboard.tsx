@@ -97,12 +97,12 @@ const AdvocacyDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-8 text-white shadow-sm">
-        <h1 className="text-3xl font-bold flex items-center">
-          <Landmark className="w-8 h-8 mr-3" />
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-8 text-white shadow-sm">
+        <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+          <Landmark className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
           ADVO-LINK
         </h1>
-        <p className="mt-2 text-teal-200">Government Affairs & Legislative Tracking</p>
+        <p className="mt-2 text-teal-200 text-sm sm:text-base">Government Affairs & Legislative Tracking</p>
       </div>
 
       {/* Stat Cards */}

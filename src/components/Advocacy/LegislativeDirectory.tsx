@@ -265,40 +265,40 @@ const LegislativeDirectory: React.FC = () => {
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="bg-teal-700 rounded-xl p-5 text-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold flex items-center">
+      <div className="bg-teal-700 rounded-xl p-4 sm:p-5 text-white shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 className="text-lg sm:text-xl font-bold flex items-center">
             <BookUser className="w-5 h-5 mr-2" />
             Legislative Directory
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              CSV
+              <span className="hidden sm:inline">CSV</span>
             </button>
             <button
               onClick={handleExportVCards}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              vCards
+              <span className="hidden sm:inline">vCards</span>
             </button>
             <button
               onClick={() => setShowSmartCapture(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Smart Capture
+              <span className="hidden sm:inline">Smart Capture</span>
             </button>
             <button
               onClick={() => setShowMerge(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-sm transition-colors"
             >
               <GitMerge className="w-3.5 h-3.5" />
-              Merge
+              <span className="hidden sm:inline">Merge</span>
             </button>
             <button
               onClick={() => {
@@ -316,32 +316,32 @@ const LegislativeDirectory: React.FC = () => {
 
       {/* Tabs + Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 px-4 gap-2 sm:gap-0">
           <div className="flex">
             <button
               onClick={() => setActiveTab('legislator')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'legislator'
                   ? 'border-teal-600 text-teal-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <UserCircle className="w-4 h-4" />
-              Legislator Offices
+              <span className="hidden sm:inline">Legislator </span>Offices
             </button>
             <button
               onClick={() => setActiveTab('committee')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'committee'
                   ? 'border-teal-600 text-teal-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <Gavel className="w-4 h-4" />
-              Committee Offices
+              Committees
             </button>
           </div>
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64 pb-2 sm:pb-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -436,7 +436,7 @@ const LegislativeDirectory: React.FC = () => {
                             <span className="text-xs text-gray-500 flex-shrink-0">District {office.district}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
                           {office.phone && (
                             <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{office.phone}</span>
                           )}
@@ -444,7 +444,7 @@ const LegislativeDirectory: React.FC = () => {
                             <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{office.email}</span>
                           )}
                           {office.address && (
-                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{office.address}{office.city ? `, ${office.city}` : ''}</span>
+                            <span className="hidden sm:flex items-center gap-1"><MapPin className="w-3 h-3" />{office.address}{office.city ? `, ${office.city}` : ''}</span>
                           )}
                         </div>
                       </div>
@@ -468,7 +468,46 @@ const LegislativeDirectory: React.FC = () => {
                             No staff members yet.
                           </div>
                         ) : (
-                          <table className="w-full text-sm">
+                          <>
+                          {/* Mobile staff cards */}
+                          <div className="sm:hidden divide-y divide-gray-100">
+                            {staff.map((s) => (
+                              <div key={s.id} className="px-4 py-3">
+                                {editingStaffId === s.id ? (
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input value={editStaffData.first_name || ''} onChange={(e) => setEditStaffData((p) => ({ ...p, first_name: e.target.value }))} className={inputClass} placeholder="First" />
+                                      <input value={editStaffData.last_name || ''} onChange={(e) => setEditStaffData((p) => ({ ...p, last_name: e.target.value }))} className={inputClass} placeholder="Last" />
+                                    </div>
+                                    <input value={editStaffData.title || ''} onChange={(e) => setEditStaffData((p) => ({ ...p, title: e.target.value }))} className={inputClass} placeholder="Title" />
+                                    <input value={editStaffData.email || ''} onChange={(e) => setEditStaffData((p) => ({ ...p, email: e.target.value }))} className={inputClass} placeholder="Email" />
+                                    <input value={editStaffData.phone || ''} onChange={(e) => setEditStaffData((p) => ({ ...p, phone: e.target.value }))} className={inputClass} placeholder="Phone" />
+                                    <div className="flex gap-2">
+                                      <button onClick={() => saveEditStaff(s.id, office.id)} disabled={savingStaff} className="flex-1 flex items-center justify-center gap-1 py-2 bg-teal-600 text-white rounded-lg text-sm">
+                                        {savingStaff ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
+                                      </button>
+                                      <button onClick={() => setEditingStaffId(null)} className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Cancel</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-between">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium text-gray-900">{s.first_name} {s.last_name}</p>
+                                      {s.title && <p className="text-xs text-gray-500">{s.title}</p>}
+                                      {s.email && <p className="text-xs text-gray-400">{s.email}</p>}
+                                      {s.phone && <p className="text-xs text-gray-400">{s.phone}</p>}
+                                    </div>
+                                    <div className="flex items-center gap-1 ml-2">
+                                      <button onClick={() => startEditStaff(s)} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                                      <button onClick={() => handleDeleteStaff(s.id, office.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {/* Desktop staff table */}
+                          <table className="hidden sm:table w-full text-sm">
                             <thead>
                               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                                 <th className="px-4 py-2 text-left font-medium">Name</th>
@@ -568,6 +607,7 @@ const LegislativeDirectory: React.FC = () => {
                               ))}
                             </tbody>
                           </table>
+                          </>
                         )}
                         <div className="px-4 py-2 border-t border-gray-100">
                           <button

@@ -391,13 +391,13 @@ const TouchpointForm: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between bg-purple-600 rounded-xl p-8 text-white shadow-sm">
+        <div className="flex items-center justify-between bg-purple-600 rounded-xl p-4 sm:p-8 text-white shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <Phone className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <Phone className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               {isEditing ? 'Edit Touchpoint' : 'Log Touchpoint'}
             </h1>
-            <p className="mt-2 text-purple-100">
+            <p className="mt-2 text-purple-100 text-sm sm:text-base">
               {isEditing ? 'Update touchpoint details' : 'Record a new interaction'}
             </p>
           </div>

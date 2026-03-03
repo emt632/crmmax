@@ -78,9 +78,9 @@ const LegiScanSearchModal: React.FC<LegiScanSearchModalProps> = ({ isOpen, onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+      <div className="relative bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-2xl sm:max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-bold text-gray-900">LegiScan Bill Search</h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -93,7 +93,7 @@ const LegiScanSearchModal: React.FC<LegiScanSearchModalProps> = ({ isOpen, onClo
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-sm text-red-700">{error}</p>
@@ -182,7 +182,7 @@ const LegiScanSearchModal: React.FC<LegiScanSearchModalProps> = ({ isOpen, onClo
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-t border-gray-200 bg-gray-50 sm:rounded-b-2xl">
           {phase === 'results' ? (
             <button
               onClick={handleBack}

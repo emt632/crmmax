@@ -402,14 +402,14 @@ const ContactsList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
-      <div className="bg-blue-600 rounded-xl p-8 text-white shadow-sm">
+      <div className="bg-blue-600 rounded-xl p-4 sm:p-8 text-white shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <Users className="w-8 h-8 mr-3" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               Contacts
             </h1>
-            <p className="mt-2 text-blue-100">
+            <p className="mt-2 text-blue-100 text-sm sm:text-base">
               Manage your contacts and relationships
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">

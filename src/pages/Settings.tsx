@@ -524,12 +524,12 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-gray-800 rounded-xl p-8 text-white shadow-sm">
-        <h1 className="text-3xl font-bold flex items-center">
-          <SettingsIcon className="w-8 h-8 mr-3" />
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-8 text-white shadow-sm">
+        <h1 className="text-xl sm:text-3xl font-bold flex items-center">
+          <SettingsIcon className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
           Settings
         </h1>
-        <p className="mt-2 text-gray-300">Manage your CRM configuration</p>
+        <p className="mt-2 text-gray-300 text-sm sm:text-base">Manage your CRM configuration</p>
       </div>
 
       {/* Tabs */}

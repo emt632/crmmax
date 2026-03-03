@@ -145,8 +145,8 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onUs
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className="relative bg-white shadow-lg w-full h-full sm:h-auto sm:rounded-xl sm:max-w-md sm:mx-4 overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <UserPlus className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900">Invite User</h2>
@@ -156,7 +156,7 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onUs
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {tempPassword ? (
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">

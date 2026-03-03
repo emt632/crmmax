@@ -207,8 +207,8 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 flex flex-col items-center">
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+        <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-2xl p-8 flex flex-col items-center">
           <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
           <p className="mt-3 text-gray-600 text-sm">Loading office staff...</p>
         </div>
@@ -217,8 +217,8 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+      <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-2xl sm:max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
@@ -252,7 +252,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                       <span className="ml-2 text-xs text-gray-500">District {office.district}</span>
                     )}
                     {office.state && (
-                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-[10px] font-medium">
+                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-medium">
                         {office.state}
                       </span>
                     )}
@@ -261,7 +261,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                     {inactiveStaff.length > 0 && (
                       <button
                         onClick={() => setShowInactive(!showInactive)}
-                        className="text-[10px] text-gray-400 hover:text-gray-600"
+                        className="text-xs text-gray-400 hover:text-gray-600"
                       >
                         {showInactive ? 'Hide' : 'Show'} inactive ({inactiveStaff.length})
                       </button>
@@ -303,7 +303,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                     if (isEditing) {
                       return (
                         <div key={s.id} className="px-4 py-3 bg-teal-50/30 space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
                               <label className={labelClass}>First Name *</label>
                               <input type="text" value={editForm.first_name} onChange={e => setEditForm(p => ({ ...p, first_name: e.target.value }))} className={inputClass} />
@@ -317,7 +317,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                             <label className={labelClass}>Title</label>
                             <input type="text" value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g., Chief of Staff" className={inputClass} />
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
                               <label className={labelClass}>Email</label>
                               <input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className={inputClass} />
@@ -352,7 +352,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                               {s.first_name} {s.last_name}
                             </span>
                             {!isActive && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-medium">
+                              <span className="inline-flex items-center px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
                                 Inactive
                               </span>
                             )}
@@ -393,7 +393,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                   {addingForOffice === office.id && (
                     <div className="px-4 py-3 bg-teal-50/30 space-y-2">
                       <p className="text-xs font-medium text-teal-700">New Staff Member</p>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <label className={labelClass}>First Name *</label>
                           <input type="text" value={addForm.first_name} onChange={e => setAddForm(p => ({ ...p, first_name: e.target.value }))} className={inputClass} autoFocus />
@@ -407,7 +407,7 @@ const ManageLegStaffModal: React.FC<ManageLegStaffModalProps> = ({
                         <label className={labelClass}>Title</label>
                         <input type="text" value={addForm.title} onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g., Chief of Staff, Legislative Director" className={inputClass} />
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <label className={labelClass}>Email</label>
                           <input type="email" value={addForm.email} onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))} className={inputClass} />

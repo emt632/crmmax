@@ -167,8 +167,8 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 sm:p-4">
+      <div className="bg-white shadow-xl w-full h-full sm:h-auto sm:rounded-xl sm:max-w-lg overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900">
             Add {officeType === 'committee' ? 'Committee' : 'Legislative'} Office
@@ -179,7 +179,7 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>Office Type *</label>
               <select value={officeType} onChange={(e) => setOfficeType(e.target.value as any)} className={inputClass}>
@@ -252,7 +252,7 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
             <input type="text" value={name} onChange={(e) => { setName(e.target.value); setSelectedPeopleId(null); }} placeholder="e.g., Senator Andy Lang" className={inputClass} />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className={labelClass}>State</label>
               <select value={state} onChange={(e) => setState(e.target.value)} className={inputClass}>
@@ -277,7 +277,7 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>City</label>
               <input type="text" value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} />
@@ -293,7 +293,7 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>Phone</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
@@ -306,14 +306,14 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
         </div>
 
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="px-3 py-2 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || !name.trim()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Add Office
