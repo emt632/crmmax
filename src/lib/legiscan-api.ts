@@ -82,18 +82,18 @@ export async function searchBills(query: string, state?: string): Promise<Legisc
   const billNumber = normalizeBillNumber(query);
   const fetches: Promise<LegiscanSearchResult[]>[] = [];
 
-  // If it looks like a bill number, do a structured getSearch with the bill param
+  // If it looks like a bill number, search with the normalized form
   if (billNumber) {
-    const billParams: Record<string, string> = { op: 'getSearch', bill: billNumber };
+    const billParams: Record<string, string> = { op: 'getSearch', query: billNumber };
     if (state) billParams.state = state;
     fetches.push(
       legiscanFetch(billParams).then(parseSearchResults).catch(() => [])
     );
   }
 
-  // Always do a text search too (handles title/keyword searches and
-  // catches bill numbers that didn't match the normalization)
-  const textParams: Record<string, string> = { op: 'search', query };
+  // Always do a text search too with the raw query (handles title/keyword
+  // searches and catches bill numbers that didn't match the normalization)
+  const textParams: Record<string, string> = { op: 'getSearch', query };
   if (state) textParams.state = state;
   fetches.push(
     legiscanFetch(textParams).then(parseSearchResults).catch(() => [])
