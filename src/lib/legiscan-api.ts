@@ -3,7 +3,7 @@ import type { LegiscanLegislator, LegiscanSession } from '../types';
 import { parseSponsorState } from './bill-format';
 
 const LEGISCAN_KEY = import.meta.env.VITE_LEGISCAN_API_KEY;
-const API_BASE = '/api/legiscan';
+const API_BASE = 'https://api.legiscan.com';
 
 // Cache TTLs
 const LEGISLATOR_CACHE_HOURS = 24;
