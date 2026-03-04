@@ -24,6 +24,8 @@ import EngagementsList from './components/Advocacy/EngagementsList';
 import EngagementForm from './components/Advocacy/EngagementForm';
 import AdvocacyReports from './components/Advocacy/AdvocacyReports';
 import LegislativeDirectory from './components/Advocacy/LegislativeDirectory';
+import SupportAsksList from './components/Advocacy/SupportAsksList';
+import SupportAskForm from './components/Advocacy/SupportAskForm';
 
 function App() {
   return (
@@ -57,6 +59,9 @@ function App() {
               <Route path="advocacy/engagements" element={<EngagementsList />} />
               <Route path="advocacy/engagements/new" element={<EngagementForm />} />
               <Route path="advocacy/engagements/:id" element={<EngagementForm />} />
+              <Route path="advocacy/support-campaigns" element={<SupportAsksList />} />
+              <Route path="advocacy/support-campaigns/new" element={<SupportAskForm />} />
+              <Route path="advocacy/support-campaigns/:id" element={<SupportAskForm />} />
               <Route path="advocacy/directory" element={<LegislativeDirectory />} />
               <Route path="advocacy/reports" element={<AdvocacyReports />} />
               <Route path="share-target" element={<ShareTarget />} />

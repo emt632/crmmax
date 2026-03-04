@@ -575,3 +575,85 @@ export interface LegislativeOfficeStaff {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Support Campaign Types ─────────────────────────────
+
+export type SupportAskTargetType =
+  | 'legislator'
+  | 'contact'
+  | 'organization'
+  | 'leg_staff'
+  | 'other';
+
+export type SupportAskOutreachMethod =
+  | 'virtual'
+  | 'in_person'
+  | 'email'
+  | 'phone'
+  | 'letter'
+  | 'other';
+
+export type SupportTypeRequested =
+  | 'letter_of_support'
+  | 'testimonial'
+  | 'reach_out_on_behalf'
+  | 'sign_on_letter'
+  | 'public_statement'
+  | 'event_attendance'
+  | 'funding_commitment'
+  | 'other';
+
+export type SupportStatus =
+  | 'pending'
+  | 'follow_up_needed'
+  | 'committed'
+  | 'received'
+  | 'declined';
+
+export type ThankYouMethod =
+  | 'letter'
+  | 'email'
+  | 'phone'
+  | 'in_person'
+  | 'other';
+
+export interface SupportAsk {
+  id: string;
+  requester_id: string;
+
+  target_type: SupportAskTargetType;
+  target_legislator_people_id?: number;
+  target_contact_id?: string;
+  target_organization_id?: string;
+  target_leg_staff_id?: string;
+  target_name?: string;
+
+  ask_date: string;
+  outreach_method: SupportAskOutreachMethod;
+  initiative?: string;
+  support_type_requested: SupportTypeRequested;
+  ask_notes?: string;
+  engagement_id?: string;
+
+  support_status: SupportStatus;
+  follow_up_date?: string;
+  follow_up_notes?: string;
+  support_type_provided?: string;
+  support_received_date?: string;
+
+  thank_you_sent: boolean;
+  thank_you_date?: string;
+  thank_you_method?: ThankYouMethod;
+  invited_to_event: boolean;
+  event_invitation_details?: string;
+  stewardship_notes?: string;
+
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+
+  // Enriched display fields
+  requester_name?: string;
+  target_display_name?: string;
+  bills?: { id: string; bill_number: string; title: string }[];
+}

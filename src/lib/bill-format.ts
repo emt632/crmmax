@@ -152,6 +152,60 @@ export const GA_ENGAGEMENT_TYPE_BADGE_COLORS: Record<string, string> = {
   federal_state_entity: 'bg-rose-100 text-rose-700',
 };
 
+// ─── Support Campaign Labels ─────────────────────────────
+
+export const SUPPORT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  follow_up_needed: 'Follow-Up Needed',
+  committed: 'Committed',
+  received: 'Received',
+  declined: 'Declined',
+};
+
+export const SUPPORT_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-700',
+  follow_up_needed: 'bg-amber-100 text-amber-700',
+  committed: 'bg-blue-100 text-blue-700',
+  received: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-700',
+};
+
+export const SUPPORT_TYPE_LABELS: Record<string, string> = {
+  letter_of_support: 'Letter of Support',
+  testimonial: 'Testimonial',
+  reach_out_on_behalf: 'Reach Out on Behalf',
+  sign_on_letter: 'Sign-On Letter',
+  public_statement: 'Public Statement',
+  event_attendance: 'Event Attendance',
+  funding_commitment: 'Funding Commitment',
+  other: 'Other',
+};
+
+export const OUTREACH_METHOD_LABELS: Record<string, string> = {
+  virtual: 'Virtual',
+  in_person: 'In-Person',
+  email: 'Email',
+  phone: 'Phone',
+  letter: 'Letter',
+  other: 'Other',
+};
+
+export const TARGET_TYPE_LABELS: Record<string, string> = {
+  legislator: 'Legislator',
+  contact: 'Contact',
+  organization: 'Organization',
+  leg_staff: 'Legislative Staff',
+  other: 'Other',
+};
+
+export const THANK_YOU_METHOD_LABELS: Record<string, string> = {
+  letter: 'Letter',
+  email: 'Email',
+  phone: 'Phone Call',
+  in_person: 'In-Person',
+  other: 'Other',
+};
+
 /**
  * Valid 2-letter US state abbreviations for validation
  */

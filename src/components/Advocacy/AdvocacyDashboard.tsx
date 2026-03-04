@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Landmark, ScrollText, Handshake, Star, Plus, Loader2,
-  TrendingUp, Calendar, ArrowRight, AlertCircle, Clock, CheckCircle2, Users,
+  TrendingUp, Calendar, ArrowRight, AlertCircle, Clock, CheckCircle2, Users, Heart,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Bill, GAEngagement } from '../../types';
+import type { Bill, GAEngagement, SupportAsk } from '../../types';
+import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_COLORS } from '../../lib/bill-format';
 import {
   formatBillNumber,
   BILL_STATUS_LABELS,
@@ -31,6 +32,7 @@ const AdvocacyDashboard: React.FC = () => {
 
   const [bills, setBills] = useState<Bill[]>([]);
   const [engagements, setEngagements] = useState<GAEngagement[]>([]);
+  const [supportAsks, setSupportAsks] = useState<SupportAsk[]>([]);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
@@ -48,13 +50,15 @@ const AdvocacyDashboard: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [billsRes, engagementsRes, usersRes] = await Promise.all([
+    const [billsRes, engagementsRes, usersRes, supportRes] = await Promise.all([
       supabase.from('bills').select('*').order('updated_at', { ascending: false }),
       supabase.from('ga_engagements').select('*').order('date', { ascending: false }),
       supabase.from('users').select('id, full_name, email').eq('is_active', true),
+      supabase.from('support_asks').select('*').order('ask_date', { ascending: false }),
     ]);
     setBills((billsRes.data || []) as Bill[]);
     setEngagements((engagementsRes.data || []) as GAEngagement[]);
+    setSupportAsks((supportRes.data || []) as SupportAsk[]);
     const map: Record<string, string> = {};
     (usersRes.data || []).forEach((u: any) => { map[u.id] = u.full_name || u.email; });
     setUserMap(map);
@@ -73,6 +77,9 @@ const AdvocacyDashboard: React.FC = () => {
 
   const weekEngagements = engagements.filter((e) => new Date(e.date) >= startOfWeek);
   const monthEngagements = engagements.filter((e) => new Date(e.date) >= startOfMonth);
+
+  const activeAsks = supportAsks.filter((a) => a.support_status === 'pending' || a.support_status === 'follow_up_needed');
+  const receivedAsks = supportAsks.filter((a) => a.support_status === 'received');
 
   const today = now.toISOString().split('T')[0];
   const pendingFollowUps = engagements
@@ -106,7 +113,7 @@ const AdvocacyDashboard: React.FC = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Link to="/advocacy/bills" className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <ScrollText className="w-5 h-5 text-teal-600" />
@@ -137,6 +144,22 @@ const AdvocacyDashboard: React.FC = () => {
             <span className="text-2xl font-bold text-gray-900">{monthEngagements.length}</span>
           </div>
           <p className="text-sm text-gray-500">Month Total</p>
+        </Link>
+
+        <Link to="/advocacy/support-campaigns" className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <Heart className="w-5 h-5 text-rose-500" />
+            <span className="text-2xl font-bold text-gray-900">{activeAsks.length}</span>
+          </div>
+          <p className="text-sm text-gray-500">Active Asks</p>
+        </Link>
+
+        <Link to="/advocacy/support-campaigns" className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <span className="text-2xl font-bold text-gray-900">{receivedAsks.length}</span>
+          </div>
+          <p className="text-sm text-gray-500">Support Received</p>
         </Link>
       </div>
 
@@ -360,6 +383,13 @@ const AdvocacyDashboard: React.FC = () => {
         >
           <Plus className="w-4 h-4" />
           Log Engagement
+        </Link>
+        <Link
+          to="/advocacy/support-campaigns/new"
+          className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 border border-teal-200 rounded-xl font-medium hover:bg-teal-50 transition-colors"
+        >
+          <Heart className="w-4 h-4" />
+          Log Support Ask
         </Link>
       </div>
     </div>

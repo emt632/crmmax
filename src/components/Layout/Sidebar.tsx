@@ -16,6 +16,7 @@ import {
   Handshake,
   FileBarChart,
   BookUser,
+  Heart,
 } from 'lucide-react';
 import ll3Logo from '../../assets/ll3-logo.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,6 +43,7 @@ const advocacyItems = [
   { path: '/advocacy', label: 'Dashboard', icon: Landmark },
   { path: '/advocacy/bills', label: 'Bills', icon: ScrollText },
   { path: '/advocacy/engagements', label: 'Engagements', icon: Handshake },
+  { path: '/advocacy/support-campaigns', label: 'Support Tracker', icon: Heart },
   { path: '/advocacy/directory', label: 'Directory', icon: BookUser },
   { path: '/advocacy/reports', label: 'Reports', icon: FileBarChart },
 ];
