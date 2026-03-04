@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Heart, ArrowLeft, Save, Loader2, Trash2,
-  ChevronDown, ChevronUp, Search, X, Plus, Calendar,
+  ChevronDown, ChevronUp, Search, X, Calendar,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';

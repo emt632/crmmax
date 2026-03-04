@@ -7,7 +7,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Bill, GAEngagement, SupportAsk } from '../../types';
-import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_COLORS } from '../../lib/bill-format';
+// Support labels imported for future use in dashboard tooltips
 import {
   formatBillNumber,
   BILL_STATUS_LABELS,
