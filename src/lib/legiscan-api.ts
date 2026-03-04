@@ -35,7 +35,8 @@ export interface LegiscanSearchResult {
 /**
  * Detect if a query looks like a bill number and normalize it to LegiScan format.
  * Common inputs: "HR4710", "H.R. 4710", "HR 4710", "S 100", "HB1234", "SF 100"
- * LegiScan federal convention: House = HB, Senate = SB (not HR/S)
+ * Federal bills use HR (H.R.) and S directly. State bills use HB, SB, HF, SF, AB, etc.
+ * All prefixes pass through as-is — no mapping needed.
  */
 function normalizeBillNumber(query: string): string | null {
   // Strip dots, extra spaces, normalize
@@ -46,17 +47,7 @@ function normalizeBillNumber(query: string): string | null {
   if (!match) return null;
 
   const [, prefix, num] = match;
-
-  // Map common user conventions to LegiScan bill number format
-  // Federal: HR/H.R. → HB, S → SB
-  // Most state prefixes (HB, SB, HF, SF, AB) pass through as-is
-  const prefixMap: Record<string, string> = {
-    'HR': 'HB',   // House Resolution common notation → LegiScan House Bill
-    'S': 'SB',    // Senate → LegiScan Senate Bill
-  };
-
-  const mapped = prefixMap[prefix] || prefix;
-  return mapped + num;
+  return prefix + num;
 }
 
 function parseSearchResults(data: LegiscanResponse): LegiscanSearchResult[] {
