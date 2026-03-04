@@ -5,8 +5,8 @@
       "destination": "https://data.cms.gov/provider-data/api/1/:path*"
     },
     {
-      "source": "/api/legiscan/:path*",
-      "destination": "https://api.legiscan.com/:path*"
+      "source": "/api/legiscan/",
+      "destination": "https://api.legiscan.com/"
     },
     {
       "source": "/((?!api/).*)",
