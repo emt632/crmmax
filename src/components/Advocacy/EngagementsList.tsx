@@ -97,25 +97,40 @@ const EngagementsList: React.FC = () => {
       });
       setAttendeeCounts(aCounts);
 
-      // Build legislator office names per engagement
+      // Build legislator names per engagement
       const legRows = legJunc.data || [];
       if (legRows.length > 0) {
         const peopleIds = [...new Set(legRows.map((r: any) => r.people_id))];
-        const { data: officeData } = await supabase
-          .from('legislative_offices')
-          .select('name, chamber, legislator_people_id')
-          .in('legislator_people_id', peopleIds);
+
+        // Try office names first, then fall back to legiscan_legislators
+        const [officeRes, legRes] = await Promise.all([
+          supabase.from('legislative_offices')
+            .select('name, chamber, legislator_people_id')
+            .in('legislator_people_id', peopleIds),
+          supabase.from('legiscan_legislators')
+            .select('people_id, name, chamber')
+            .in('people_id', peopleIds),
+        ]);
 
         const officeByPeopleId: Record<number, { name: string; chamber?: string }> = {};
-        for (const o of (officeData || []) as any[]) {
+        for (const o of ((officeRes.data || []) as any[])) {
           officeByPeopleId[o.legislator_people_id] = { name: o.name, chamber: o.chamber };
+        }
+        const legByPeopleId: Record<number, { name: string; chamber?: string }> = {};
+        for (const l of ((legRes.data || []) as any[])) {
+          legByPeopleId[l.people_id] = { name: l.name, chamber: l.chamber };
         }
 
         const nameMap: Record<string, string[]> = {};
         for (const r of legRows as any[]) {
           const office = officeByPeopleId[r.people_id];
-          if (office) {
-            const display = formatOfficeName(office.name, office.chamber);
+          const leg = legByPeopleId[r.people_id];
+          const display = office
+            ? formatOfficeName(office.name, office.chamber)
+            : leg
+              ? formatOfficeName(leg.name, leg.chamber)
+              : null;
+          if (display) {
             if (!nameMap[r.engagement_id]) nameMap[r.engagement_id] = [];
             nameMap[r.engagement_id].push(display);
           }

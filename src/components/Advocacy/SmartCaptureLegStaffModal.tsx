@@ -345,19 +345,18 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     }
   };
 
-  // Try to match an office name to a legiscan legislator (for linking staff to engagements)
-  const findLegislatorPeopleId = async (officeName: string, state?: string): Promise<number | null> => {
+  // Try to match an office name to a legiscan legislator (returns full record for canonical naming)
+  const findLegislator = async (officeName: string, state?: string): Promise<{ people_id: number; name: string; chamber?: string; state?: string } | null> => {
     const clean = stripName(officeName).toLowerCase().trim();
     if (!clean) return null;
 
-    // Split into words and search for legislators matching last name + state
     const words = clean.split(/\s+/);
-    const lastName = words[words.length - 1]; // Last word is typically last name
+    const lastName = words[words.length - 1];
     if (!lastName || lastName.length < 2) return null;
 
     let query = supabase
       .from('legiscan_legislators')
-      .select('people_id, name, first_name, last_name, state')
+      .select('people_id, name, first_name, last_name, state, chamber')
       .ilike('last_name', lastName);
 
     if (state) query = query.eq('state', state.toUpperCase());
@@ -365,20 +364,37 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     const { data } = await query;
     if (!data || data.length === 0) return null;
 
-    // If only one match, use it
-    if (data.length === 1) return data[0].people_id;
+    if (data.length === 1) return data[0];
 
-    // Multiple matches — try to narrow by first name
     if (words.length >= 2) {
       const firstName = words[0].toLowerCase();
       const firstMatch = data.find((l) =>
         (l.first_name || '').toLowerCase() === firstName ||
         (l.name || '').toLowerCase().startsWith(firstName)
       );
-      if (firstMatch) return firstMatch.people_id;
+      if (firstMatch) return firstMatch;
     }
 
     return null;
+  };
+
+  // Build canonical office name from LegiScan data (matches ManageLegStaffModal pattern)
+  const canonicalOfficeName = (legName: string, chamber?: string): string => {
+    const c = (chamber || '').toLowerCase();
+    if (c === 'senate' || c === 'sen') return `Senator ${legName}`;
+    if (c === 'house' || c === 'assembly' || c === 'rep') return `Representative ${legName}`;
+    return legName;
+  };
+
+  // Find existing office for a legislator people_id
+  const findExistingOffice = async (peopleId: number): Promise<LegislativeOffice | null> => {
+    const { data } = await supabase
+      .from('legislative_offices')
+      .select('*')
+      .eq('legislator_people_id', peopleId)
+      .limit(1)
+      .single();
+    return data as LegislativeOffice | null;
   };
 
   const handleConfirm = async () => {
@@ -392,7 +408,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
 
     try {
       let officeId = matchedOfficeId;
-      let office: LegislativeOffice;
+      let office: LegislativeOffice | undefined;
 
       const officeContactFields = {
         phone: parsedStaff.phone.trim() || null,
@@ -404,59 +420,90 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
       };
 
       if (isLegislatorCard) {
-        // Legislator's own card — create or update office with contact info
-        const officeName = parsedStaff.office_name.trim() || `${parsedStaff.first_name} ${parsedStaff.last_name}`.trim();
-        if (!officeName) {
+        // Legislator's own card — match to LegiScan, then create or update office
+        const rawName = parsedStaff.office_name.trim() || `${parsedStaff.first_name} ${parsedStaff.last_name}`.trim();
+        if (!rawName) {
           setError('Office name is required.');
           setSaving(false);
           return;
         }
 
-        if (matchedOfficeId) {
-          // Update existing office with contact info from card
-          // Also try to set legislator_people_id if not already set
-          const existingOffice = existingOffices.find((o) => o.id === matchedOfficeId);
-          const updateFields: any = { ...officeContactFields };
-          if (existingOffice && !existingOffice.legislator_people_id) {
-            const peopleId = await findLegislatorPeopleId(officeName, parsedStaff.state);
-            if (peopleId) updateFields.legislator_people_id = peopleId;
-          }
+        // Try to match to a LegiScan legislator for canonical naming
+        const leg = await findLegislator(rawName, parsedStaff.state);
 
+        if (leg) {
+          // Check if an office already exists for this legislator
+          const existingLegOffice = await findExistingOffice(leg.people_id);
+          if (existingLegOffice) {
+            // Update existing office with contact info from card
+            const { data: updated, error: updErr } = await supabase
+              .from('legislative_offices')
+              .update(officeContactFields)
+              .eq('id', existingLegOffice.id)
+              .select('*')
+              .single();
+            if (updErr || !updated) throw new Error('Failed to update office');
+            office = updated as LegislativeOffice;
+          } else if (matchedOfficeId) {
+            // User manually matched to an office — update it with contact info + link
+            const updateFields: any = { ...officeContactFields, legislator_people_id: leg.people_id };
+            const { data: updated, error: updErr } = await supabase
+              .from('legislative_offices')
+              .update(updateFields)
+              .eq('id', matchedOfficeId)
+              .select('*')
+              .single();
+            if (updErr || !updated) throw new Error('Failed to update office');
+            office = updated as LegislativeOffice;
+          } else {
+            // Create new office with canonical LegiScan name
+            const name = canonicalOfficeName(leg.name, leg.chamber);
+            const { data: newOffice, error: offErr } = await supabase
+              .from('legislative_offices')
+              .insert({
+                office_type: 'legislator',
+                name,
+                state: leg.state || parsedStaff.state || null,
+                chamber: (leg.chamber || parsedStaff.chamber || '').toLowerCase() || null,
+                legislator_people_id: leg.people_id,
+                created_by: userId,
+                ...officeContactFields,
+              })
+              .select('*')
+              .single();
+            if (offErr || !newOffice) throw new Error('Failed to create office');
+            office = newOffice as LegislativeOffice;
+          }
+        } else if (matchedOfficeId) {
+          // No LegiScan match — update user-selected office with contact info
           const { data: updated, error: updErr } = await supabase
             .from('legislative_offices')
-            .update(updateFields)
+            .update(officeContactFields)
             .eq('id', matchedOfficeId)
             .select('*')
             .single();
-
           if (updErr || !updated) throw new Error('Failed to update office');
           office = updated as LegislativeOffice;
         } else {
-          // Create new office with contact info
-          const officeType = officeName.toLowerCase().includes('committee') ? 'committee' : 'legislator';
-          const peopleId = officeType === 'legislator'
-            ? await findLegislatorPeopleId(officeName, parsedStaff.state)
-            : null;
-
+          // No LegiScan match, no manual match — create with extracted name
+          const officeType = rawName.toLowerCase().includes('committee') ? 'committee' : 'legislator';
           const { data: newOffice, error: offErr } = await supabase
             .from('legislative_offices')
             .insert({
               office_type: officeType,
-              name: officeName,
+              name: rawName,
               state: parsedStaff.state || null,
               chamber: parsedStaff.chamber || null,
-              legislator_people_id: peopleId,
               created_by: userId,
               ...officeContactFields,
             })
             .select('*')
             .single();
-
           if (offErr || !newOffice) throw new Error('Failed to create office');
           office = newOffice as LegislativeOffice;
         }
 
-        onCreated(null, office);
+        onCreated(null, office!);
         resetState();
         onClose();
         return;
@@ -464,28 +511,40 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
 
       // Staff card flow
       if (createNewOffice && parsedStaff.office_name.trim()) {
-        // Create new office
+        // Try to match to LegiScan legislator for canonical naming
         const officeType = parsedStaff.office_name.toLowerCase().includes('committee') ? 'committee' : 'legislator';
-        const peopleId = officeType === 'legislator'
-          ? await findLegislatorPeopleId(parsedStaff.office_name.trim(), parsedStaff.state)
+        const leg = officeType === 'legislator'
+          ? await findLegislator(parsedStaff.office_name.trim(), parsedStaff.state)
           : null;
 
-        const { data: newOffice, error: offErr } = await supabase
-          .from('legislative_offices')
-          .insert({
-            office_type: officeType,
-            name: parsedStaff.office_name.trim(),
-            state: parsedStaff.state || null,
-            chamber: parsedStaff.chamber || null,
-            legislator_people_id: peopleId,
-            created_by: userId,
-          })
-          .select('*')
-          .single();
+        // If matched, check for existing office first
+        if (leg) {
+          const existingLegOffice = await findExistingOffice(leg.people_id);
+          if (existingLegOffice) {
+            officeId = existingLegOffice.id;
+            office = existingLegOffice;
+          }
+        }
 
-        if (offErr || !newOffice) throw new Error('Failed to create office');
-        officeId = newOffice.id;
-        office = newOffice as LegislativeOffice;
+        if (!office) {
+          const name = leg ? canonicalOfficeName(leg.name, leg.chamber) : parsedStaff.office_name.trim();
+          const { data: newOffice, error: offErr } = await supabase
+            .from('legislative_offices')
+            .insert({
+              office_type: officeType,
+              name,
+              state: leg?.state || parsedStaff.state || null,
+              chamber: (leg?.chamber || parsedStaff.chamber || '').toLowerCase() || null,
+              legislator_people_id: leg?.people_id || null,
+              created_by: userId,
+            })
+            .select('*')
+            .single();
+
+          if (offErr || !newOffice) throw new Error('Failed to create office');
+          officeId = newOffice.id;
+          office = newOffice as LegislativeOffice;
+        }
       } else if (matchedOfficeId) {
         office = existingOffices.find((o) => o.id === matchedOfficeId)!;
       } else {
