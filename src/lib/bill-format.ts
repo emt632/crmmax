@@ -127,6 +127,18 @@ export const GA_ENGAGEMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 /**
+ * Committee role labels for legislator engagements
+ */
+export const COMMITTEE_ROLE_LABELS: Record<string, string> = {
+  chair: 'Chair',
+  ranking_member: 'Ranking Member',
+  vice_chair: 'Vice Chair',
+  member: 'Member',
+  subcommittee_chair: 'Subcommittee Chair',
+  ex_officio: 'Ex Officio',
+};
+
+/**
  * Association name options for ga_committee type
  */
 export const GA_ASSOCIATION_OPTIONS = [

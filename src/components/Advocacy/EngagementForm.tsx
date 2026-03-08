@@ -7,8 +7,8 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { GAEngagementType, LegiscanLegislator, LegislativeOffice, LegislativeOfficeStaff } from '../../types';
-import { GA_ENGAGEMENT_TYPE_LABELS, GA_ASSOCIATION_OPTIONS, US_STATES } from '../../lib/bill-format';
-import { getLegislators, getOurStates, getAssociationOptions, getInitiativeOptions, getLocationOptions, setAdvoLinkSetting } from '../../lib/legiscan-api';
+import { GA_ENGAGEMENT_TYPE_LABELS, GA_ASSOCIATION_OPTIONS, COMMITTEE_ROLE_LABELS, US_STATES } from '../../lib/bill-format';
+import { getLegislators, getOurStates, getAssociationOptions, getInitiativeOptions, getLocationOptions, getCommitteeOptions, setAdvoLinkSetting } from '../../lib/legiscan-api';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import type { MultiSelectOption } from './MultiSelectDropdown';
 import QuickAddLegStaffModal from './QuickAddLegStaffModal';
@@ -31,6 +31,8 @@ interface EngagementFormData {
   initiative: string;
   meeting_location: string;
   meeting_location_detail: string;
+  committee_of_jurisdiction: string;
+  committee_role: string;
   follow_up_required: boolean;
   follow_up_date: string;
   follow_up_notes: string;
@@ -64,13 +66,15 @@ const emptyForm: EngagementFormData = {
   subject: '',
   notes: '',
   topics_covered: '',
-  jurisdiction: '',
+  jurisdiction: 'US',
   meeting_level: '',
   association_name: '',
   entity_name: '',
   initiative: '',
   meeting_location: '',
   meeting_location_detail: '',
+  committee_of_jurisdiction: '',
+  committee_role: '',
   follow_up_required: false,
   follow_up_date: '',
   follow_up_notes: '',
@@ -152,6 +156,11 @@ const EngagementForm: React.FC = () => {
   const [associationOptions, setAssociationOptions] = useState<string[]>([]);
   const [initiativeOptions, setInitiativeOptions] = useState<string[]>([]);
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  const [committeeOptions, setCommitteeOptions] = useState<string[]>([]);
+
+  // State sub-filter for legislator picker (used when jurisdiction is Federal)
+  const [stateFilter, setStateFilter] = useState('');
+  const [showAllStates, setShowAllStates] = useState(false);
 
   // Modal state
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -185,25 +194,38 @@ const EngagementForm: React.FC = () => {
     getAssociationOptions().then((opts) => setAssociationOptions(opts.length > 0 ? opts : GA_ASSOCIATION_OPTIONS));
     getInitiativeOptions().then(setInitiativeOptions);
     getLocationOptions().then(setLocationOptions);
+    getCommitteeOptions().then(setCommitteeOptions);
   }, [id]);
 
-  // Fetch legislators when jurisdiction changes (for legislator_office type)
+  // Fetch legislators when jurisdiction or state filter changes
   useEffect(() => {
     if (formData.jurisdiction && (formData.type === 'legislator_office' || formData.type === 'committee_meeting')) {
       const fetchLegs = async () => {
         setLegislatorsLoading(true);
-        let result = await getLegislators(formData.jurisdiction);
-        // For Federal (US), getSessionPeople often returns nothing.
-        // Fall back to ALL cached legislators so users can search across states.
-        if (result.length === 0 && formData.jurisdiction === 'US') {
-          result = await getLegislators();
+
+        // If a specific state sub-filter is active, load that state's legislators
+        if (stateFilter && formData.jurisdiction === 'US') {
+          const stateResult = await getLegislators(stateFilter);
+          // Merge with existing cached legislators (avoid duplicates)
+          const existing = await getLegislators(); // all cached
+          const merged = [...existing];
+          const existingIds = new Set(existing.map((l) => l.people_id));
+          stateResult.forEach((l) => { if (!existingIds.has(l.people_id)) merged.push(l); });
+          setLegislators(merged);
+        } else {
+          let result = await getLegislators(formData.jurisdiction);
+          // For Federal (US), getSessionPeople often returns nothing.
+          // Fall back to ALL cached legislators so users can search across states.
+          if (result.length === 0 && formData.jurisdiction === 'US') {
+            result = await getLegislators();
+          }
+          setLegislators(result);
         }
-        setLegislators(result);
         setLegislatorsLoading(false);
       };
       fetchLegs();
     }
-  }, [formData.jurisdiction, formData.type]);
+  }, [formData.jurisdiction, formData.type, stateFilter]);
 
   // Fetch leg staff when selected legislators change
   useEffect(() => {
@@ -244,17 +266,24 @@ const EngagementForm: React.FC = () => {
     let filtered = legislators;
     if (chamberFilter) {
       const matches = CHAMBER_MAP[chamberFilter] || [chamberFilter];
-      filtered = legislators.filter((l) => {
+      filtered = filtered.filter((l) => {
         const ch = (l.chamber || '').toLowerCase();
         return matches.some((m) => ch.includes(m) || m.includes(ch));
       });
     }
+    // Apply state sub-filter when jurisdiction is Federal
+    if (stateFilter && formData.jurisdiction === 'US') {
+      filtered = filtered.filter((l) => l.state === stateFilter);
+    }
+    const isFederal = formData.jurisdiction === 'US';
     return filtered.map((l) => ({
       value: String(l.people_id),
-      label: `${l.name} (${l.party || '?'})`,
+      label: isFederal
+        ? `${l.name} (${l.party || '?'}-${l.state || '??'})`
+        : `${l.name} (${l.party || '?'})`,
       sublabel: `${l.chamber || ''} ${l.district ? `- District ${l.district}` : ''}`.trim(),
     }));
-  }, [legislators, chamberFilter]);
+  }, [legislators, chamberFilter, stateFilter, formData.jurisdiction]);
 
   if (!hasModule('advoLink')) {
     return (
@@ -433,6 +462,8 @@ const EngagementForm: React.FC = () => {
       initiative: data.initiative || '',
       meeting_location: data.meeting_location || '',
       meeting_location_detail: data.meeting_location_detail || '',
+      committee_of_jurisdiction: data.committee_of_jurisdiction || '',
+      committee_role: data.committee_role || '',
       follow_up_required: data.follow_up_required || false,
       follow_up_date: data.follow_up_date || '',
       follow_up_notes: data.follow_up_notes || '',
@@ -502,6 +533,8 @@ const EngagementForm: React.FC = () => {
       meeting_location: formData.meeting_location || null,
       meeting_location_detail: formData.meeting_location_detail || null,
       committee_office_id: formData.type === 'committee_meeting' ? selectedCommitteeOfficeId || null : null,
+      committee_of_jurisdiction: formData.type === 'legislator_office' ? formData.committee_of_jurisdiction || null : null,
+      committee_role: formData.type === 'legislator_office' ? formData.committee_role || null : null,
       guests: formData.type === 'lobby_team' ? guests.filter((g) => g.name.trim()) : [],
       follow_up_required: formData.follow_up_required,
       follow_up_date: formData.follow_up_required ? formData.follow_up_date || null : null,
@@ -651,14 +684,39 @@ const EngagementForm: React.FC = () => {
               </div>
               <div className="md:col-span-2">
                 <label className={labelClass}>Jurisdiction</label>
-                <select value={formData.jurisdiction} onChange={(e) => handleInputChange('jurisdiction', e.target.value)} className={inputClass}>
+                <select
+                  value={formData.jurisdiction}
+                  onChange={(e) => {
+                    if (e.target.value === '__show_all__') {
+                      setShowAllStates(true);
+                      return;
+                    }
+                    handleInputChange('jurisdiction', e.target.value);
+                    // Reset state sub-filter when jurisdiction changes
+                    setStateFilter('');
+                  }}
+                  className={inputClass}
+                >
                   <option value="">Select...</option>
-                  {(ourStates.length > 0
-                    ? US_STATES.filter((s) => ourStates.includes(s.value))
-                    : US_STATES
-                  ).map((s) => (
-                    <option key={s.value} value={s.value}>{s.label} ({s.value})</option>
-                  ))}
+                  <option value="US">Federal (US)</option>
+                  {ourStates.length > 0 && (
+                    <>
+                      <option disabled>── Our States ──</option>
+                      {US_STATES.filter((s) => ourStates.includes(s.value) && s.value !== 'US').map((s) => (
+                        <option key={s.value} value={s.value}>{s.label} ({s.value})</option>
+                      ))}
+                    </>
+                  )}
+                  {showAllStates ? (
+                    <>
+                      <option disabled>── All States ──</option>
+                      {US_STATES.filter((s) => s.value !== 'US' && !(ourStates.includes(s.value))).map((s) => (
+                        <option key={s.value} value={s.value}>{s.label} ({s.value})</option>
+                      ))}
+                    </>
+                  ) : (
+                    <option value="__show_all__">── Other States... ──</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -730,7 +788,7 @@ const EngagementForm: React.FC = () => {
 
           {formData.type === 'legislator_office' && (
             <div className="border-t border-gray-100 pt-3 mt-3 space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`grid grid-cols-1 ${formData.jurisdiction === 'US' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-2`}>
                 <div>
                   <label className={labelClass}>Chamber</label>
                   <select value={chamberFilter} onChange={(e) => setChamberFilter(e.target.value)} className={inputClass}>
@@ -740,6 +798,17 @@ const EngagementForm: React.FC = () => {
                     <option value="assembly">Assembly</option>
                   </select>
                 </div>
+                {formData.jurisdiction === 'US' && (
+                  <div>
+                    <label className={labelClass}>State</label>
+                    <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className={inputClass}>
+                      <option value="">All states</option>
+                      {US_STATES.filter((s) => s.value !== 'US' && s.value !== 'DC').map((s) => (
+                        <option key={s.value} value={s.value}>{s.label} ({s.value})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className={labelClass}>Meeting Level</label>
                   <select value={formData.meeting_level} onChange={(e) => handleInputChange('meeting_level', e.target.value)} className={inputClass}>
@@ -797,6 +866,33 @@ const EngagementForm: React.FC = () => {
                   />
                 </div>
               )}
+
+              {/* Committee of Jurisdiction — explains why meeting with this legislator */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <div>
+                  <label className={labelClass}>Committee Role</label>
+                  <select value={formData.committee_role} onChange={(e) => handleInputChange('committee_role', e.target.value)} className={inputClass}>
+                    <option value="">Select...</option>
+                    {Object.entries(COMMITTEE_ROLE_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <InitiativeCombo
+                    value={formData.committee_of_jurisdiction}
+                    options={committeeOptions}
+                    onChange={(val) => handleInputChange('committee_of_jurisdiction', val)}
+                    onAddNew={async (val) => {
+                      if (!user) return;
+                      const updated = [...committeeOptions, val].sort();
+                      setCommitteeOptions(updated);
+                      await setAdvoLinkSetting('committee_options', updated, user.id);
+                    }}
+                    label="Committee(s) of Jurisdiction"
+                  />
+                </div>
+              </div>
             </div>
           )}
 

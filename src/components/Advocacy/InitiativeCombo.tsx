@@ -7,9 +7,10 @@ export interface InitiativeComboProps {
   options: string[];        // all known initiatives
   onChange: (val: string) => void;
   onAddNew: (val: string) => Promise<void>;
+  label?: string;           // override label (default: "Initiatives")
 }
 
-const InitiativeCombo: React.FC<InitiativeComboProps> = ({ value, options, onChange, onAddNew }) => {
+const InitiativeCombo: React.FC<InitiativeComboProps> = ({ value, options, onChange, onAddNew, label }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +59,7 @@ const InitiativeCombo: React.FC<InitiativeComboProps> = ({ value, options, onCha
 
   return (
     <div ref={containerRef} className="relative">
-      <label className="block text-xs font-medium text-gray-600 mb-0.5">Initiatives</label>
+      <label className="block text-xs font-medium text-gray-600 mb-0.5">{label || 'Initiatives'}</label>
 
       {/* Chip display + input */}
       <div
@@ -88,7 +89,7 @@ const InitiativeCombo: React.FC<InitiativeComboProps> = ({ value, options, onCha
           value={query}
           onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
-          placeholder={selected.length === 0 ? 'Search or type new initiative...' : ''}
+          placeholder={selected.length === 0 ? `Search or type new ${(label || 'initiative').toLowerCase()}...` : ''}
           className="flex-1 min-w-[120px] outline-none text-sm bg-transparent py-0.5"
         />
       </div>

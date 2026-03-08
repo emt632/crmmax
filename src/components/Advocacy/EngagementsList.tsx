@@ -7,7 +7,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { GAEngagement } from '../../types';
-import { GA_ENGAGEMENT_TYPE_LABELS, GA_ENGAGEMENT_TYPE_BADGE_COLORS } from '../../lib/bill-format';
+import { GA_ENGAGEMENT_TYPE_LABELS, GA_ENGAGEMENT_TYPE_BADGE_COLORS, COMMITTEE_ROLE_LABELS } from '../../lib/bill-format';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   lobby_team: <Users className="w-4 h-4" />,
@@ -287,6 +287,12 @@ const EngagementsList: React.FC = () => {
                       <p className="font-medium text-gray-900">{eng.subject}</p>
                       {entity && (
                         <p className="text-sm text-gray-500 mt-0.5">{entity}</p>
+                      )}
+                      {eng.committee_of_jurisdiction && (
+                        <p className="text-xs text-teal-700 mt-0.5">
+                          {eng.committee_role ? `${COMMITTEE_ROLE_LABELS[eng.committee_role] || eng.committee_role}: ` : ''}
+                          {eng.committee_of_jurisdiction}
+                        </p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 ml-4">

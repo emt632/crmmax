@@ -23,12 +23,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   GA_ENGAGEMENT_TYPE_LABELS,
   GA_ENGAGEMENT_TYPE_BADGE_COLORS,
+  COMMITTEE_ROLE_LABELS,
   US_STATES,
   formatBillNumber,
 } from '../../lib/bill-format';
 import { getOurStates } from '../../lib/legiscan-api';
 
-type SortField = 'date' | 'engagement' | 'subject' | 'jurisdiction' | 'initiative' | 'location' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
+type SortField = 'date' | 'engagement' | 'subject' | 'jurisdiction' | 'initiative' | 'location' | 'committee' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
 type SortDir = 'asc' | 'desc';
 
 const MEETING_LOCATION_LABELS: Record<string, string> = {
@@ -283,6 +284,7 @@ const AdvocacyReports: React.FC = () => {
         case 'jurisdiction': cmp = (a.jurisdiction || '').localeCompare(b.jurisdiction || ''); break;
         case 'initiative': cmp = (a.initiative || '').localeCompare(b.initiative || ''); break;
         case 'location': cmp = (a.meeting_location || '').localeCompare(b.meeting_location || ''); break;
+        case 'committee': cmp = (a.committee_of_jurisdiction || '').localeCompare(b.committee_of_jurisdiction || ''); break;
         case 'bills': cmp = a.bills.length - b.bills.length; break;
         case 'staff': cmp = a.staff.length - b.staff.length; break;
         case 'contacts': cmp = a.contacts.length - b.contacts.length; break;
@@ -361,7 +363,7 @@ const AdvocacyReports: React.FC = () => {
   const exportCSV = () => {
     const headers = [
       'Date', 'Engagement', 'Meeting Level', 'Legislators Met', 'Legislative Staff Met',
-      'Subject', 'Jurisdiction',
+      'Subject', 'Jurisdiction', 'Committee Role', 'Committee(s) of Jurisdiction',
       'Initiative', 'Meeting Location', 'Location Detail',
       'Bills', 'LL3 Staff', 'PSG Attendees', 'Duration (min)',
       'Topics Covered', 'Notes', 'Follow-Up Required', 'Follow-Up Date',
@@ -376,6 +378,8 @@ const AdvocacyReports: React.FC = () => {
       e.legStaff.map(ls => `${ls.first_name} ${ls.last_name}${ls.title ? ` - ${ls.title}` : ''}`).join('; '),
       e.subject,
       getJurisdictionLabel(e.jurisdiction),
+      e.committee_role ? (COMMITTEE_ROLE_LABELS[e.committee_role] || e.committee_role) : '',
+      e.committee_of_jurisdiction || '',
       e.initiative || '',
       e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
       e.meeting_location_detail || '',
@@ -407,8 +411,15 @@ const AdvocacyReports: React.FC = () => {
     doc.setTextColor(100);
     doc.text(`Generated: ${format(new Date(), 'MMMM d, yyyy')} | Filters: ${buildFilterSummary()}`, 14, 30);
 
-    const baseHeaders = ['Date', 'Engagement', 'Subject', 'Jur.', 'Initiative', 'Location', 'Bills', 'Attendees', 'Dur.'];
+    const baseHeaders = ['Date', 'Engagement', 'Subject', 'Jur.', 'Committee', 'Initiative', 'Location', 'Bills', 'Attendees', 'Dur.'];
     const headers = includeNotes ? [...baseHeaders, 'Notes'] : baseHeaders;
+
+    const committeeText = (e: any): string => {
+      if (!e.committee_of_jurisdiction) return '';
+      const role = e.committee_role ? (COMMITTEE_ROLE_LABELS[e.committee_role] || e.committee_role) + ': ' : '';
+      const text = role + e.committee_of_jurisdiction;
+      return text.length > 30 ? text.slice(0, 27) + '...' : text;
+    };
 
     const rows = filteredEngagements.map(e => {
       const engText = getEngagementText(e);
@@ -417,6 +428,7 @@ const AdvocacyReports: React.FC = () => {
         engText.length > 30 ? engText.slice(0, 27) + '...' : engText,
         e.subject.length > 35 ? e.subject.slice(0, 32) + '...' : e.subject,
         getJurisdictionLabel(e.jurisdiction),
+        committeeText(e),
         e.initiative || '',
         e.meeting_location ? (MEETING_LOCATION_LABELS[e.meeting_location] || e.meeting_location) : '',
         e.bills.map(b => formatBillNumber(b.bill_number)).join('; '),
@@ -818,6 +830,12 @@ const AdvocacyReports: React.FC = () => {
                   {getJurisdictionLabel(e.jurisdiction) && (
                     <span className="text-gray-500">{getJurisdictionLabel(e.jurisdiction)}</span>
                   )}
+                  {e.committee_of_jurisdiction && (
+                    <span className="text-teal-700">
+                      {e.committee_role ? `${COMMITTEE_ROLE_LABELS[e.committee_role] || e.committee_role}: ` : ''}
+                      {e.committee_of_jurisdiction}
+                    </span>
+                  )}
                   {e.initiative && <span className="text-gray-500">{e.initiative}</span>}
                   {e.meeting_location && (
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-medium ${
@@ -871,6 +889,7 @@ const AdvocacyReports: React.FC = () => {
                   ['engagement', 'Engagement'],
                   ['subject', 'Subject'],
                   ['jurisdiction', 'Jur.'],
+                  ['committee', 'Committee'],
                   ['initiative', 'Initiative'],
                   ['location', 'Location'],
                   ['bills', 'Bills'],
@@ -916,6 +935,14 @@ const AdvocacyReports: React.FC = () => {
                       </td>
                       <td className="px-2 py-3 text-sm text-gray-600 whitespace-nowrap">
                         {getJurisdictionLabel(e.jurisdiction) || '—'}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate" title={e.committee_of_jurisdiction || ''}>
+                        {e.committee_of_jurisdiction ? (
+                          <span className="text-teal-700">
+                            {e.committee_role ? `${COMMITTEE_ROLE_LABELS[e.committee_role] || e.committee_role}: ` : ''}
+                            {e.committee_of_jurisdiction}
+                          </span>
+                        ) : '—'}
                       </td>
                       <td className="px-2 py-3 text-sm text-gray-600 max-w-[120px] truncate" title={e.initiative || ''}>
                         {e.initiative || '—'}

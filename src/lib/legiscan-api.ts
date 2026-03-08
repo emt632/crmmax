@@ -396,3 +396,16 @@ export async function getLocationOptions(): Promise<string[]> {
   const val = await getAdvoLinkSetting('location_options');
   return Array.isArray(val) ? val : [];
 }
+
+export async function getCommitteeOptions(): Promise<string[]> {
+  // Extract unique committee names from tracked bills
+  const { data: bills } = await supabase.from('bills').select('committees');
+  const fromBills = new Set<string>();
+  (bills || []).forEach((b: any) => {
+    (b.committees || []).forEach((c: any) => { if (c.name) fromBills.add(c.name); });
+  });
+  // Merge with stored custom options
+  const custom = await getAdvoLinkSetting('committee_options');
+  const all = [...fromBills, ...(Array.isArray(custom) ? custom : [])];
+  return [...new Set(all)].sort();
+}
