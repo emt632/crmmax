@@ -335,23 +335,68 @@ const EngagementForm: React.FC = () => {
   };
 
   const fetchLegStaffForLegislators = async (peopleIds: number[]) => {
-    // Get offices for these legislators, then get staff for those offices
-    const { data: offices } = await supabase
+    // Get offices for these legislators by people_id link
+    const { data: linkedOffices } = await supabase
       .from('legislative_offices')
       .select('id, legislator_people_id')
       .in('legislator_people_id', peopleIds);
 
-    if (!offices || offices.length === 0) {
+    // Also try to find offices by name matching for offices that weren't linked via people_id
+    // (e.g., offices created by SmartCapture before the linking fix)
+    const linkedPeopleIds = new Set((linkedOffices || []).map((o: any) => o.legislator_people_id));
+    const unmatchedPeopleIds = peopleIds.filter((pid) => !linkedPeopleIds.has(pid));
+
+    let nameMatchedOfficeIds: string[] = [];
+    if (unmatchedPeopleIds.length > 0) {
+      // Get legislator names for unmatched IDs
+      const { data: legs } = await supabase
+        .from('legiscan_legislators')
+        .select('people_id, name, last_name')
+        .in('people_id', unmatchedPeopleIds);
+
+      if (legs && legs.length > 0) {
+        // Get all legislator-type offices without a people_id link
+        const { data: unlinkedOffices } = await supabase
+          .from('legislative_offices')
+          .select('id, name, legislator_people_id')
+          .eq('office_type', 'legislator')
+          .is('legislator_people_id', null);
+
+        if (unlinkedOffices && unlinkedOffices.length > 0) {
+          for (const leg of legs) {
+            const lastName = (leg.last_name || leg.name?.split(' ').pop() || '').toLowerCase();
+            if (!lastName) continue;
+            const match = unlinkedOffices.find((o: any) =>
+              o.name.toLowerCase().includes(lastName)
+            );
+            if (match) {
+              nameMatchedOfficeIds.push(match.id);
+              // Backfill the legislator_people_id for future lookups
+              supabase.from('legislative_offices')
+                .update({ legislator_people_id: leg.people_id })
+                .eq('id', match.id)
+                .then(() => {});
+            }
+          }
+        }
+      }
+    }
+
+    const allOfficeIds = [
+      ...(linkedOffices || []).map((o: any) => o.id),
+      ...nameMatchedOfficeIds,
+    ];
+
+    if (allOfficeIds.length === 0) {
       setLegStaffOptions([]);
       setLegStaffRecords([]);
       return;
     }
 
-    const officeIds = offices.map((o: any) => o.id);
     const { data: staffData } = await supabase
       .from('legislative_office_staff')
       .select('*')
-      .in('office_id', officeIds)
+      .in('office_id', allOfficeIds)
       .order('last_name');
 
     const records = (staffData || []) as (LegislativeOfficeStaff & { is_active?: boolean })[];

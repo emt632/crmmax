@@ -345,6 +345,42 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
     }
   };
 
+  // Try to match an office name to a legiscan legislator (for linking staff to engagements)
+  const findLegislatorPeopleId = async (officeName: string, state?: string): Promise<number | null> => {
+    const clean = stripName(officeName).toLowerCase().trim();
+    if (!clean) return null;
+
+    // Split into words and search for legislators matching last name + state
+    const words = clean.split(/\s+/);
+    const lastName = words[words.length - 1]; // Last word is typically last name
+    if (!lastName || lastName.length < 2) return null;
+
+    let query = supabase
+      .from('legiscan_legislators')
+      .select('people_id, name, first_name, last_name, state')
+      .ilike('last_name', lastName);
+
+    if (state) query = query.eq('state', state.toUpperCase());
+
+    const { data } = await query;
+    if (!data || data.length === 0) return null;
+
+    // If only one match, use it
+    if (data.length === 1) return data[0].people_id;
+
+    // Multiple matches — try to narrow by first name
+    if (words.length >= 2) {
+      const firstName = words[0].toLowerCase();
+      const firstMatch = data.find((l) =>
+        (l.first_name || '').toLowerCase() === firstName ||
+        (l.name || '').toLowerCase().startsWith(firstName)
+      );
+      if (firstMatch) return firstMatch.people_id;
+    }
+
+    return null;
+  };
+
   const handleConfirm = async () => {
     if (!isLegislatorCard && (!parsedStaff.first_name.trim() || !parsedStaff.last_name.trim())) {
       setError('First and last name are required.');
@@ -378,9 +414,17 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
 
         if (matchedOfficeId) {
           // Update existing office with contact info from card
+          // Also try to set legislator_people_id if not already set
+          const existingOffice = existingOffices.find((o) => o.id === matchedOfficeId);
+          const updateFields: any = { ...officeContactFields };
+          if (existingOffice && !existingOffice.legislator_people_id) {
+            const peopleId = await findLegislatorPeopleId(officeName, parsedStaff.state);
+            if (peopleId) updateFields.legislator_people_id = peopleId;
+          }
+
           const { data: updated, error: updErr } = await supabase
             .from('legislative_offices')
-            .update(officeContactFields)
+            .update(updateFields)
             .eq('id', matchedOfficeId)
             .select('*')
             .single();
@@ -390,6 +434,10 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
         } else {
           // Create new office with contact info
           const officeType = officeName.toLowerCase().includes('committee') ? 'committee' : 'legislator';
+          const peopleId = officeType === 'legislator'
+            ? await findLegislatorPeopleId(officeName, parsedStaff.state)
+            : null;
+
           const { data: newOffice, error: offErr } = await supabase
             .from('legislative_offices')
             .insert({
@@ -397,6 +445,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
               name: officeName,
               state: parsedStaff.state || null,
               chamber: parsedStaff.chamber || null,
+              legislator_people_id: peopleId,
               created_by: userId,
               ...officeContactFields,
             })
@@ -417,6 +466,10 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
       if (createNewOffice && parsedStaff.office_name.trim()) {
         // Create new office
         const officeType = parsedStaff.office_name.toLowerCase().includes('committee') ? 'committee' : 'legislator';
+        const peopleId = officeType === 'legislator'
+          ? await findLegislatorPeopleId(parsedStaff.office_name.trim(), parsedStaff.state)
+          : null;
+
         const { data: newOffice, error: offErr } = await supabase
           .from('legislative_offices')
           .insert({
@@ -424,6 +477,7 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
             name: parsedStaff.office_name.trim(),
             state: parsedStaff.state || null,
             chamber: parsedStaff.chamber || null,
+            legislator_people_id: peopleId,
             created_by: userId,
           })
           .select('*')
