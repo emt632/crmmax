@@ -79,7 +79,8 @@ const AdvocacyDashboard: React.FC = () => {
   const monthEngagements = engagements.filter((e) => new Date(e.date) >= startOfMonth);
 
   const activeAsks = supportAsks.filter((a) => a.support_status === 'pending' || a.support_status === 'follow_up_needed');
-  const receivedAsks = supportAsks.filter((a) => a.support_status === 'received');
+  const convertedAsks = supportAsks.filter((a) => a.support_status === 'committed' || a.support_status === 'received');
+  const conversionRate = supportAsks.length > 0 ? Math.round((convertedAsks.length / supportAsks.length) * 100) : 0;
 
   const today = now.toISOString().split('T')[0];
   const pendingFollowUps = engagements
@@ -156,10 +157,12 @@ const AdvocacyDashboard: React.FC = () => {
 
         <Link to="/advocacy/support-campaigns" className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
-            <span className="text-2xl font-bold text-gray-900">{receivedAsks.length}</span>
+            <TrendingUp className={`w-5 h-5 ${conversionRate >= 50 ? 'text-green-600' : conversionRate >= 25 ? 'text-amber-500' : 'text-red-500'}`} />
+            <span className={`text-2xl font-bold ${conversionRate >= 50 ? 'text-green-600' : conversionRate >= 25 ? 'text-amber-600' : 'text-red-600'}`}>
+              {supportAsks.length > 0 ? `${conversionRate}%` : '—'}
+            </span>
           </div>
-          <p className="text-sm text-gray-500">Support Received</p>
+          <p className="text-sm text-gray-500">Conversion Rate</p>
         </Link>
       </div>
 

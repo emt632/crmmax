@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Plus, Search, Loader2, Check } from 'lucide-react';
+import { Heart, Plus, Search, Loader2, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -45,6 +45,7 @@ const SupportAsksList: React.FC = () => {
   const [filterTargetType, setFilterTargetType] = useState('');
   const [filterScope, setFilterScope] = useState<'all' | 'mine'>('all');
   const [initiativeOptions, setInitiativeOptions] = useState<string[]>([]);
+  const [showAllInitiatives, setShowAllInitiatives] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -207,7 +208,8 @@ const SupportAsksList: React.FC = () => {
   /* ── Filtering ── */
   const filtered = asks.filter((a) => {
     if (filterStatus && a.support_status !== filterStatus) return false;
-    if (filterInitiative && a.initiative !== filterInitiative) return false;
+    if (filterInitiative === '__none__' && a.initiative) return false;
+    if (filterInitiative && filterInitiative !== '__none__' && a.initiative !== filterInitiative) return false;
     if (filterTargetType && a.target_type !== filterTargetType) return false;
     if (filterScope === 'mine' && a.created_by !== effectiveUserId) return false;
     if (searchQuery) {
@@ -233,6 +235,37 @@ const SupportAsksList: React.FC = () => {
   }
   const totalPipeline = asks.length;
 
+  /* ── Overall conversion rate ── */
+  const totalConverted = asks.filter((a) => a.support_status === 'committed' || a.support_status === 'received').length;
+  const overallConversionRate = asks.length > 0 ? Math.round((totalConverted / asks.length) * 100) : 0;
+
+  /* ── Per-initiative conversion rates ── */
+  const initiativeGroups: { name: string; total: number; converted: number; rate: number }[] = [];
+  const groupMap: Record<string, { total: number; converted: number }> = {};
+  for (const a of asks) {
+    const key = a.initiative || '';
+    if (!groupMap[key]) groupMap[key] = { total: 0, converted: 0 };
+    groupMap[key].total++;
+    if (a.support_status === 'committed' || a.support_status === 'received') {
+      groupMap[key].converted++;
+    }
+  }
+  for (const [key, val] of Object.entries(groupMap)) {
+    initiativeGroups.push({
+      name: key || 'No initiative',
+      total: val.total,
+      converted: val.converted,
+      rate: val.total > 0 ? Math.round((val.converted / val.total) * 100) : 0,
+    });
+  }
+  // Sort by rate desc, "No initiative" always last
+  initiativeGroups.sort((a, b) => {
+    if (a.name === 'No initiative') return 1;
+    if (b.name === 'No initiative') return -1;
+    return b.rate - a.rate;
+  });
+  const visibleInitiatives = showAllInitiatives ? initiativeGroups : initiativeGroups.slice(0, 5);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -245,6 +278,7 @@ const SupportAsksList: React.FC = () => {
             </h1>
             <p className="mt-2 text-teal-200 text-sm sm:text-base">
               {asks.length} support ask{asks.length !== 1 ? 's' : ''} tracked
+              {asks.length > 0 && ` \u00b7 ${overallConversionRate}% conversion rate`}
             </p>
           </div>
           <Link
@@ -279,6 +313,64 @@ const SupportAsksList: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Initiative Performance */}
+      {!loading && initiativeGroups.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Initiative Conversion Rates</p>
+          <div className="space-y-2">
+            {visibleInitiatives.map((group) => (
+              <button
+                key={group.name}
+                onClick={() =>
+                  setFilterInitiative(
+                    group.name === 'No initiative'
+                      ? filterInitiative === '__none__' ? '' : '__none__'
+                      : filterInitiative === group.name ? '' : group.name
+                  )
+                }
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  (filterInitiative === group.name || (filterInitiative === '__none__' && group.name === 'No initiative'))
+                    ? 'bg-teal-50 ring-1 ring-teal-300'
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-900">{group.name}</span>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span>{group.converted}/{group.total} converted</span>
+                    <span className="font-semibold text-gray-700">{group.rate}%</span>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div
+                    className="bg-green-500 h-1.5 rounded-full transition-all"
+                    style={{ width: `${group.rate}%` }}
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+          {initiativeGroups.length > 5 && (
+            <button
+              onClick={() => setShowAllInitiatives(!showAllInitiatives)}
+              className="mt-2 flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+            >
+              {showAllInitiatives ? (
+                <>
+                  <ChevronDown className="w-3 h-3" />
+                  Show fewer
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-3 h-3" />
+                  Show all {initiativeGroups.length} initiatives
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 
