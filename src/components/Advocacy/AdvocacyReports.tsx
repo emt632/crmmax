@@ -450,7 +450,19 @@ const AdvocacyReports: React.FC = () => {
       headStyles: { fillColor: [13, 148, 136] },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       columnStyles: includeNotes
-        ? { 0: { cellWidth: 16 }, 2: { cellWidth: 34 }, 8: { cellWidth: 16 }, 9: { cellWidth: 12 }, 10: { cellWidth: 55 } }
+        ? {
+            0: { cellWidth: 18 },  // Date
+            1: { cellWidth: 22 },  // Engagement
+            2: { cellWidth: 30 },  // Subject
+            3: { cellWidth: 16 },  // Jur.
+            4: { cellWidth: 22 },  // Committee
+            5: { cellWidth: 'auto' }, // Initiative (takes remaining)
+            6: { cellWidth: 18 },  // Location
+            7: { cellWidth: 14 },  // Bills
+            8: { cellWidth: 18 },  // Attendees
+            9: { cellWidth: 10 },  // Dur.
+            10: { cellWidth: 50 }, // Notes
+          }
         : { 0: { cellWidth: 18 }, 2: { cellWidth: 40 }, 8: { cellWidth: 14 } },
     });
 
