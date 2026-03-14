@@ -265,6 +265,16 @@ export function legiscanBillToFormData(detail: LegiscanBillDetail) {
   };
 }
 
+// LegiScan state_id → abbreviation (from getStateList, 1-indexed)
+export const LEGISCAN_STATE_IDS: Record<number, string> = {
+  1:'AL',2:'AK',3:'AZ',4:'AR',5:'CA',6:'CO',7:'CT',8:'DE',9:'FL',10:'GA',
+  11:'HI',12:'ID',13:'IL',14:'IN',15:'IA',16:'KS',17:'KY',18:'LA',19:'ME',20:'MD',
+  21:'MA',22:'MI',23:'MN',24:'MS',25:'MO',26:'MT',27:'NE',28:'NV',29:'NH',30:'NJ',
+  31:'NM',32:'NY',33:'NC',34:'ND',35:'OH',36:'OK',37:'OR',38:'PA',39:'RI',40:'SC',
+  41:'SD',42:'TN',43:'TX',44:'UT',45:'VT',46:'VA',47:'WA',48:'WV',49:'WI',50:'WY',
+  51:'DC',52:'US',
+};
+
 // ─── Legislator Cache ───────────────────────────────────────
 
 export async function getLegislators(state?: string): Promise<LegiscanLegislator[]> {
@@ -300,7 +310,7 @@ export async function getLegislators(state?: string): Promise<LegiscanLegislator
       first_name: p.first_name,
       last_name: p.last_name,
       party: p.party,
-      state: state,
+      state: parseHomeStateFromDistrict(p.district) || (p.state_id ? LEGISCAN_STATE_IDS[p.state_id] : null) || state,
       chamber: p.role || '',
       district: p.district || '',
       committee_ids: [],
@@ -317,6 +327,55 @@ export async function getLegislators(state?: string): Promise<LegiscanLegislator
     console.error('Failed to fetch legislators from LegiScan:', err);
     return cached || [];
   }
+}
+
+/**
+ * Parse home state from LegiScan federal district string.
+ * Federal districts: "SD-MN" (Senate), "HD-MN-7" (House)
+ */
+function parseHomeStateFromDistrict(district?: string): string | null {
+  if (!district) return null;
+  // Patterns: "SD-MN", "HD-MN-7", "HD-WA-9"
+  const m = district.match(/^[SH]D-([A-Z]{2})/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Resolve home states for legislators cached with state="US".
+ * Fetches fresh data from LegiScan getSessionPeople for the US session,
+ * parses home state from district field (e.g. "SD-MN" → "MN"), updates cache.
+ */
+export async function resolveUSLegislatorStates(peopleIds: number[]): Promise<Map<number, string>> {
+  const result = new Map<number, string>();
+  if (!peopleIds.length || !LEGISCAN_KEY) return result;
+
+  try {
+    const sessions = await getSessionList('US');
+    const sessionId = sessions[0]?.session_id;
+    if (!sessionId) return result;
+
+    const data = await legiscanFetch({ op: 'getSessionPeople', id: String(sessionId), state: 'US' });
+    if (data.status !== 'OK' || !data.sessionpeople?.people) return result;
+
+    const pidSet = new Set(peopleIds);
+    const people: any[] = Array.isArray(data.sessionpeople.people)
+      ? data.sessionpeople.people
+      : Object.values(data.sessionpeople.people);
+
+    for (const p of people) {
+      if (pidSet.has(p.people_id)) {
+        const homeState = parseHomeStateFromDistrict(p.district);
+        if (homeState) {
+          result.set(p.people_id, homeState);
+          // Update cache permanently
+          supabase.from('legiscan_legislators').update({ state: homeState }).eq('people_id', p.people_id).then(() => {});
+        }
+      }
+    }
+  } catch {
+    // Silently fail — state will just be missing
+  }
+  return result;
 }
 
 // ─── Session Cache ──────────────────────────────────────────

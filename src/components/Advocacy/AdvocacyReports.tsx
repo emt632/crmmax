@@ -14,6 +14,7 @@ import {
   MapPin,
   Lightbulb,
   StickyNote,
+  BookOpen,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,7 +28,8 @@ import {
   US_STATES,
   formatBillNumber,
 } from '../../lib/bill-format';
-import { getOurStates } from '../../lib/legiscan-api';
+import { getOurStates, resolveUSLegislatorStates } from '../../lib/legiscan-api';
+import ExecSummaryModal from './ExecSummaryModal';
 
 type SortField = 'date' | 'engagement' | 'subject' | 'jurisdiction' | 'initiative' | 'location' | 'committee' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
 type SortDir = 'asc' | 'desc';
@@ -42,7 +44,7 @@ interface EnrichedEngagement extends GAEngagement {
   bills: { id: string; bill_number: string; title: string }[];
   staff: { id: string; full_name: string | null; email: string }[];
   contacts: { id: string; first_name: string; last_name: string }[];
-  legislators: { people_id: number; name: string; party?: string; chamber?: string; state?: string }[];
+  legislators: { people_id: number; name: string; party?: string; chamber?: string; state?: string; district?: string }[];
   legStaff: { id: string; first_name: string; last_name: string; title?: string }[];
 }
 
@@ -102,6 +104,7 @@ const AdvocacyReports: React.FC = () => {
 
   // Export options
   const [includeNotes, setIncludeNotes] = useState(false);
+  const [showExecSummary, setShowExecSummary] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -128,7 +131,7 @@ const AdvocacyReports: React.FC = () => {
           .select('engagement_id, contact_id, contacts(id, first_name, last_name)'),
         supabase
           .from('ga_engagement_legislators')
-          .select('engagement_id, people_id, legiscan_legislators(people_id, name, party, chamber, state)'),
+          .select('engagement_id, people_id, legiscan_legislators(people_id, name, party, chamber, state, district)'),
         supabase
           .from('ga_engagement_leg_staff')
           .select('engagement_id, staff_id, legislative_office_staff(id, first_name, last_name, title)'),
@@ -172,13 +175,31 @@ const AdvocacyReports: React.FC = () => {
         contactMap.get(eid)!.push(contact);
       }
 
-      const legMap = new Map<string, { people_id: number; name: string; party?: string; chamber?: string; state?: string }[]>();
+      const legMap = new Map<string, { people_id: number; name: string; party?: string; chamber?: string; state?: string; district?: string }[]>();
+      // Collect legislators with state="US" that need home state resolution
+      const needsStateIds = new Set<number>();
       for (const row of legJoinRes.data || []) {
         const eid = row.engagement_id as string;
-        const leg = row.legiscan_legislators as unknown as { people_id: number; name: string; party?: string; chamber?: string; state?: string } | null;
+        const leg = row.legiscan_legislators as unknown as { people_id: number; name: string; party?: string; chamber?: string; state?: string; district?: string } | null;
         if (!leg) continue;
         if (!legMap.has(eid)) legMap.set(eid, []);
         legMap.get(eid)!.push(leg);
+        if (leg.state === 'US') needsStateIds.add(leg.people_id);
+      }
+
+      // Resolve home state for federal legislators cached with state="US"
+      // by re-fetching from LegiScan and using state_id → abbreviation mapping
+      if (needsStateIds.size > 0) {
+        const stateFixMap = await resolveUSLegislatorStates(Array.from(needsStateIds));
+        if (stateFixMap.size > 0) {
+          for (const legs of legMap.values()) {
+            for (const l of legs) {
+              if (l.state === 'US' && stateFixMap.has(l.people_id)) {
+                l.state = stateFixMap.get(l.people_id);
+              }
+            }
+          }
+        }
       }
 
       const legStaffMap = new Map<string, { id: string; first_name: string; last_name: string; title?: string }[]>();
@@ -1101,8 +1122,22 @@ const AdvocacyReports: React.FC = () => {
             <FileText className="w-4 h-4 mr-2" />
             Export PDF
           </button>
+          <button
+            onClick={() => setShowExecSummary(true)}
+            disabled={filteredEngagements.length === 0}
+            className="inline-flex items-center px-4 py-2.5 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Executive Summary
+          </button>
         </div>
       </div>
+
+      <ExecSummaryModal
+        isOpen={showExecSummary}
+        onClose={() => setShowExecSummary(false)}
+        engagements={filteredEngagements}
+      />
     </div>
   );
 };
