@@ -426,7 +426,7 @@ const AdvocacyReports: React.FC = () => {
       const base = [
         e.date ? format(new Date(e.date + 'T00:00:00'), 'MM/dd/yy') : '',
         engText.length > 30 ? engText.slice(0, 27) + '...' : engText,
-        e.subject.length > 35 ? e.subject.slice(0, 32) + '...' : e.subject,
+        e.subject,
         getJurisdictionLabel(e.jurisdiction),
         committeeText(e),
         e.initiative || '',
@@ -453,15 +453,15 @@ const AdvocacyReports: React.FC = () => {
         ? {
             0: { cellWidth: 18 },  // Date
             1: { cellWidth: 22 },  // Engagement
-            2: { cellWidth: 30 },  // Subject
+            2: { cellWidth: 42 },  // Subject
             3: { cellWidth: 16 },  // Jur.
             4: { cellWidth: 22 },  // Committee
             5: { cellWidth: 'auto' }, // Initiative (takes remaining)
-            6: { cellWidth: 18 },  // Location
+            6: { cellWidth: 16 },  // Location
             7: { cellWidth: 14 },  // Bills
             8: { cellWidth: 18 },  // Attendees
             9: { cellWidth: 10 },  // Dur.
-            10: { cellWidth: 50 }, // Notes
+            10: { cellWidth: 45 }, // Notes
           }
         : { 0: { cellWidth: 18 }, 2: { cellWidth: 40 }, 8: { cellWidth: 14 } },
     });
