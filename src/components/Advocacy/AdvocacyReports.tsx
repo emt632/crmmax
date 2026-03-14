@@ -437,7 +437,7 @@ const AdvocacyReports: React.FC = () => {
       ];
       if (includeNotes) {
         const notes = e.notes || '';
-        base.push(notes.length > 80 ? notes.slice(0, 77) + '...' : notes);
+        base.push(notes.length > 150 ? notes.slice(0, 147) + '...' : notes);
       }
       return base;
     });
@@ -450,7 +450,7 @@ const AdvocacyReports: React.FC = () => {
       headStyles: { fillColor: [13, 148, 136] },
       alternateRowStyles: { fillColor: [249, 250, 251] },
       columnStyles: includeNotes
-        ? { 0: { cellWidth: 16 }, 2: { cellWidth: 34 }, 8: { cellWidth: 12 }, 9: { cellWidth: 50 } }
+        ? { 0: { cellWidth: 16 }, 2: { cellWidth: 34 }, 8: { cellWidth: 16 }, 9: { cellWidth: 12 }, 10: { cellWidth: 55 } }
         : { 0: { cellWidth: 18 }, 2: { cellWidth: 40 }, 8: { cellWidth: 14 } },
     });
 
