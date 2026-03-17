@@ -384,27 +384,31 @@ const EngagementForm: React.FC = () => {
         .in('people_id', unmatchedPeopleIds);
 
       if (legs && legs.length > 0) {
-        // Get all legislator-type offices without a people_id link
-        const { data: unlinkedOffices } = await supabase
+        // Search ALL legislator-type offices by name (not just unlinked ones)
+        // This handles offices created via the directory without a people_id link,
+        // or offices that were linked to a different people_id
+        const { data: allLegOffices } = await supabase
           .from('legislative_offices')
           .select('id, name, legislator_people_id')
-          .eq('office_type', 'legislator')
-          .is('legislator_people_id', null);
+          .eq('office_type', 'legislator');
 
-        if (unlinkedOffices && unlinkedOffices.length > 0) {
+        if (allLegOffices && allLegOffices.length > 0) {
+          const alreadyLinkedIds = new Set((linkedOffices || []).map((o: any) => o.id));
           for (const leg of legs) {
             const lastName = (leg.last_name || leg.name?.split(' ').pop() || '').toLowerCase();
             if (!lastName) continue;
-            const match = unlinkedOffices.find((o: any) =>
-              o.name.toLowerCase().includes(lastName)
+            const match = allLegOffices.find((o: any) =>
+              !alreadyLinkedIds.has(o.id) && o.name.toLowerCase().includes(lastName)
             );
             if (match) {
               nameMatchedOfficeIds.push(match.id);
               // Backfill the legislator_people_id for future lookups
-              supabase.from('legislative_offices')
-                .update({ legislator_people_id: leg.people_id })
-                .eq('id', match.id)
-                .then(() => {});
+              if (!match.legislator_people_id) {
+                supabase.from('legislative_offices')
+                  .update({ legislator_people_id: leg.people_id })
+                  .eq('id', match.id)
+                  .then(() => {});
+              }
             }
           }
         }
