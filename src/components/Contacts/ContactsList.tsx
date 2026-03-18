@@ -19,12 +19,16 @@ import {
   List,
   X,
   Users,
-  Heart
+  Heart,
+  Trash2,
+  Loader2,
+  CheckSquare,
 } from 'lucide-react';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { formatPhone } from '../../lib/format-phone';
 import { contactsToVCardFile, downloadVCard } from '../../lib/vcard';
+import { deleteContactPhoto } from '../../lib/photo-upload';
 
 const ContactsList: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -41,6 +45,8 @@ const ContactsList: React.FC = () => {
   const [contactTypes, setContactTypes] = useState<ContactType[]>([]);
   const [typeAssignments, setTypeAssignments] = useState<ContactTypeAssignment[]>([]);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -369,6 +375,58 @@ const ContactsList: React.FC = () => {
     downloadVCard(vcardContent, `contacts-${format(new Date(), 'yyyy-MM-dd')}.vcf`);
   };
 
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredContacts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredContacts.map(c => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    if (!confirm(`Delete ${count} contact${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+
+    setBulkDeleting(true);
+    try {
+      // Delete photos from storage
+      const toDelete = contacts.filter(c => selectedIds.has(c.id));
+      for (const c of toDelete) {
+        if (c.photo_url) {
+          try { await deleteContactPhoto(c.photo_url); } catch {}
+        }
+      }
+
+      // Delete contacts (CASCADE handles related records)
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      setSelectedIds(new Set());
+      fetchContacts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete contacts');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
@@ -636,19 +694,62 @@ const ContactsList: React.FC = () => {
         </div>
       ) : viewMode === 'list' ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Select-all header */}
+          {filteredContacts.length > 0 && (
+            <div className="px-6 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+              <button
+                onClick={toggleSelectAll}
+                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  selectedIds.size === filteredContacts.length && filteredContacts.length > 0
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : selectedIds.size > 0
+                    ? 'bg-blue-100 border-blue-400 text-blue-600'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {selectedIds.size > 0 && (
+                  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                    {selectedIds.size === filteredContacts.length
+                      ? <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      : <path d="M3 6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    }
+                  </svg>
+                )}
+              </button>
+              <span className="text-xs text-gray-500">
+                {selectedIds.size > 0 ? `${selectedIds.size} of ${filteredContacts.length} selected` : 'Select all'}
+              </span>
+            </div>
+          )}
           <div className="divide-y divide-gray-200">
             {filteredContacts.map((contact) => {
               const orgInfo = getContactOrganization(contact.id);
               const contactTypeList = getContactTypes(contact.id);
+              const isSelected = selectedIds.has(contact.id);
               return (
                 <Link
                   key={contact.id}
                   to={`/contacts/${contact.id}`}
-                  className="block hover:bg-gray-50 transition-colors group"
+                  className={`block hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50/50' : ''}`}
                 >
                   <div className="px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
+                        {/* Checkbox */}
+                        <button
+                          onClick={(e) => toggleSelect(contact.id, e)}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-blue-600 border-blue-600 text-white'
+                              : 'border-gray-300 hover:border-blue-400'
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </button>
                         <div className="flex-shrink-0 h-12 w-12 rounded-xl shadow-sm overflow-hidden">
                           {contact.photo_url ? (
                             <img src={contact.photo_url} alt={`${contact.first_name} ${contact.last_name}`} className="h-full w-full object-cover" />
@@ -818,6 +919,28 @@ const ContactsList: React.FC = () => {
               </Link>
             );
           })}
+        </div>
+      )}
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-gray-900 text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4">
+          <CheckSquare className="w-5 h-5 text-blue-400" />
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <div className="w-px h-6 bg-gray-600" />
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+          >
+            {bulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            Delete
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Clear
+          </button>
         </div>
       )}
     </div>

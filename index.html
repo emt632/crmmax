@@ -13,9 +13,9 @@
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'wasm-unsafe-eval';
-      style-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       img-src 'self' data: blob: https://gzxyeyaodpjvwvsaygqc.supabase.co;
-      font-src 'self';
+      font-src 'self' https://fonts.gstatic.com;
       connect-src 'self' https://api.openai.com https://api.legiscan.com https://data.cms.gov https://gzxyeyaodpjvwvsaygqc.supabase.co https://raw.githubusercontent.com;
       frame-ancestors 'none';
       base-uri 'self';
