@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Pencil, Star, Loader2, Link2, Users, Handshake,
-  ChevronDown, ChevronUp, Clock, Calendar, ExternalLink,
+  ChevronDown, ChevronUp, Clock, Calendar, ExternalLink, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,7 +13,7 @@ import {
   GA_ENGAGEMENT_TYPE_LABELS, GA_ENGAGEMENT_TYPE_BADGE_COLORS,
   parseSponsorState,
 } from '../../lib/bill-format';
-import { getOurStates } from '../../lib/legiscan-api';
+import { getOurStates, refreshBillFromLegiscan } from '../../lib/legiscan-api';
 import { matchCommittee, getCommitteeMembers } from '../../lib/congress-data';
 import type { CommitteeMember } from '../../lib/congress-data';
 
@@ -181,6 +181,10 @@ const BillDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [ourStates, setOurStates] = useState<string[]>([]);
 
+  // Refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+
   // Expandable states
   const [expandedCommittee, setExpandedCommittee] = useState<number | null>(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -307,6 +311,27 @@ const BillDetail: React.FC = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!bill?.legiscan_bill_id || refreshing) return;
+    setRefreshing(true);
+    setRefreshMsg(null);
+    try {
+      const result = await refreshBillFromLegiscan(bill.id, bill.legiscan_bill_id);
+      if (!result) {
+        setRefreshMsg({ type: 'error', text: 'Could not fetch bill from LegiScan.' });
+      } else if (result.changes.length === 0) {
+        setRefreshMsg({ type: 'info', text: 'Bill is already up to date.' });
+      } else {
+        setRefreshMsg({ type: 'success', text: result.changes.join(', ') });
+      }
+      await fetchBill();
+    } catch (err: any) {
+      setRefreshMsg({ type: 'error', text: err.message || 'Refresh failed.' });
+    }
+    setRefreshing(false);
+    setTimeout(() => setRefreshMsg(null), 6000);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -348,15 +373,39 @@ const BillDetail: React.FC = () => {
             <p className="text-teal-100 text-lg">{bill.title}</p>
             <p className="text-teal-200 text-sm mt-1">{bill.jurisdiction}</p>
           </div>
-          <Link
-            to={`/advocacy/bills/${id}/edit`}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-          >
-            <Pencil className="w-4 h-4" />
-            Edit
-          </Link>
+          <div className="flex items-center gap-2">
+            {bill.legiscan_bill_id && (
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors disabled:opacity-50"
+                title="Refresh from LegiScan"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            )}
+            <Link
+              to={`/advocacy/bills/${id}/edit`}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* Refresh Flash */}
+      {refreshMsg && (
+        <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
+          refreshMsg.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+          refreshMsg.type === 'info' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+          'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {refreshMsg.type === 'success' && 'Updated: '}{refreshMsg.text}
+        </div>
+      )}
 
       {/* Status Pipeline */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

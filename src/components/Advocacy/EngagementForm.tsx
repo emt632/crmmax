@@ -16,6 +16,7 @@ import QuickAddLegOfficeModal from './QuickAddLegOfficeModal';
 import QuickAddCommitteeStaffModal from './QuickAddCommitteeStaffModal';
 import ManageLegStaffModal from './ManageLegStaffModal';
 import InitiativeCombo from './InitiativeCombo';
+import MentionTextarea, { extractMentions } from './MentionTextarea';
 
 interface EngagementFormData {
   type: GAEngagementType;
@@ -603,6 +604,24 @@ const EngagementForm: React.FC = () => {
     }
     await Promise.all(inserts);
 
+    // Save @mentions from notes text (delete-all + re-insert)
+    await supabase.from('ga_engagement_mentions').delete().eq('engagement_id', engagementId!);
+    const mentions = extractMentions(formData.notes);
+    if (mentions.length > 0) {
+      await supabase.from('ga_engagement_mentions').insert(
+        mentions.map((m) => ({
+          engagement_id: engagementId!,
+          mention_type: m.type,
+          legislator_people_id: m.type === 'legislator' ? Number(m.id) : null,
+          leg_staff_id: m.type === 'leg_staff' ? m.id : null,
+          contact_id: m.type === 'contact' ? m.id : null,
+          user_id: m.type === 'user' ? m.id : null,
+          committee_office_id: m.type === 'committee' ? m.id : null,
+          created_by: user.id,
+        }))
+      );
+    }
+
     setSaving(false);
     clearDraft();
     navigate('/advocacy/engagements');
@@ -1075,8 +1094,14 @@ const EngagementForm: React.FC = () => {
           </div>
 
           <div className="border-t border-gray-100 pt-3">
-            <label className={labelClass}>Notes</label>
-            <textarea value={formData.notes} onChange={(e) => handleInputChange('notes', e.target.value)} rows={4} className={`${inputClass} resize-none`} />
+            <label className={labelClass}>Notes <span className="font-normal text-gray-400">— type @ to mention people</span></label>
+            <MentionTextarea
+              value={formData.notes}
+              onChange={(val) => handleInputChange('notes', val)}
+              rows={4}
+              className={`${inputClass} resize-none`}
+              placeholder="Meeting notes... use @name to mention someone"
+            />
           </div>
 
           {/* Follow-Up */}

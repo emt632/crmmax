@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { format } from 'date-fns';
 import {
   BookUser, Search, Plus, ChevronDown, ChevronRight,
   Edit2, Trash2, Loader2, Download, UserCircle, Gavel,
-  Phone, Mail, MapPin, Save, X, Sparkles, GitMerge, Camera,
+  Phone, Mail, MapPin, Save, X, Sparkles, GitMerge, Camera, MessageCircle, ArrowUpDown,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { US_STATES } from '../../lib/bill-format';
@@ -82,12 +84,18 @@ const inputClass = 'w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus
 
 const LegislativeDirectory: React.FC = () => {
   const { user, hasModule } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('legislator');
   const [offices, setOffices] = useState<LegislativeOffice[]>([]);
   const [staffMap, setStaffMap] = useState<Record<string, LegislativeOfficeStaff[]>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOffices, setExpandedOffices] = useState<Set<string>>(new Set());
+  const [mentionCounts, setMentionCounts] = useState<Record<string, number>>({});
+  // All engagements linked to an office (via junction tables + mentions), keyed by office id
+  const [officeEngagements, setOfficeEngagements] = useState<Record<string, { id: string; subject: string; date: string; type: string; source: string }[]>>({});
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const highlightProcessed = useRef(false);
 
   // Modal state
   const [showAddOfficeModal, setShowAddOfficeModal] = useState(false);
@@ -97,6 +105,7 @@ const LegislativeDirectory: React.FC = () => {
   const [showMerge, setShowMerge] = useState(false);
   const [smartCaptureTarget, setSmartCaptureTarget] = useState<{ office: LegislativeOffice; mode: 'legislator' | 'staff' } | null>(null);
   const [stateFilter, setStateFilter] = useState<string>(''); // empty = all
+  const [sortBy, setSortBy] = useState<'name' | 'state'>('name');
 
   // Inline edit state
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
@@ -122,6 +131,7 @@ const LegislativeDirectory: React.FC = () => {
     const allOffices = (officeData || []) as LegislativeOffice[];
     setOffices(allOffices);
 
+    let localStaffMap: Record<string, LegislativeOfficeStaff[]> = {};
     if (allOffices.length > 0) {
       const { data: staffData } = await supabase
         .from('legislative_office_staff')
@@ -129,15 +139,170 @@ const LegislativeDirectory: React.FC = () => {
         .neq('is_active', false)
         .order('last_name');
 
-      const map: Record<string, LegislativeOfficeStaff[]> = {};
       for (const s of (staffData || []) as LegislativeOfficeStaff[]) {
-        if (!map[s.office_id]) map[s.office_id] = [];
-        map[s.office_id].push(s);
+        if (!localStaffMap[s.office_id]) localStaffMap[s.office_id] = [];
+        localStaffMap[s.office_id].push(s);
       }
-      setStaffMap(map);
+      setStaffMap(localStaffMap);
     }
+
+    // Fetch mention counts + engagement details for badges
+    const { data: mentionData } = await supabase
+      .from('ga_engagement_mentions')
+      .select('mention_type, legislator_people_id, leg_staff_id, committee_office_id, ga_engagements!inner(id, subject, date, type)');
+    const counts: Record<string, number> = {};
+    const engMap: Record<string, { id: string; subject: string; date: string; type: string }[]> = {};
+    for (const m of (mentionData || []) as any[]) {
+      let key = '';
+      if (m.mention_type === 'legislator' && m.legislator_people_id) key = `legislator:${m.legislator_people_id}`;
+      else if (m.mention_type === 'leg_staff' && m.leg_staff_id) key = `leg_staff:${m.leg_staff_id}`;
+      else if (m.mention_type === 'committee' && m.committee_office_id) key = `committee:${m.committee_office_id}`;
+      if (key) {
+        counts[key] = (counts[key] || 0) + 1;
+        if (!engMap[key]) engMap[key] = [];
+        const eng = m.ga_engagements;
+        // Deduplicate
+        if (eng && !engMap[key].some((e: any) => e.id === eng.id)) {
+          engMap[key].push({ id: eng.id, subject: eng.subject || 'Untitled', date: eng.date || '', type: eng.type || '' });
+        }
+      }
+    }
+    setMentionCounts(counts);
+
+    // Build officeEngagements: all engagements linked to each office via junction tables + mentions
+    const oEngMap: Record<string, Map<string, { id: string; subject: string; date: string; type: string; source: string }>> = {};
+    const addToOffice = (officeId: string, eng: { id: string; subject: string; date: string; type: string }, source: string) => {
+      if (!oEngMap[officeId]) oEngMap[officeId] = new Map();
+      if (!oEngMap[officeId].has(eng.id)) oEngMap[officeId].set(eng.id, { ...eng, source });
+    };
+
+    // 1. Legislator junction: ga_engagement_legislators → people_id → office
+    const { data: legJuncData } = await supabase
+      .from('ga_engagement_legislators')
+      .select('people_id, ga_engagements!inner(id, subject, date, type)');
+    for (const row of (legJuncData || []) as any[]) {
+      const office = allOffices.find((o) => o.legislator_people_id === row.people_id);
+      if (office && row.ga_engagements) addToOffice(office.id, row.ga_engagements, 'attendee');
+    }
+
+    // 2. Leg staff junction: ga_engagement_leg_staff → staff_id → office_id
+    const { data: legStaffJuncData } = await supabase
+      .from('ga_engagement_leg_staff')
+      .select('staff_id, ga_engagements!inner(id, subject, date, type)');
+    const staffToOffice: Record<string, string> = {};
+    for (const [oid, sList] of Object.entries(localStaffMap)) {
+      for (const s of sList) staffToOffice[s.id] = oid;
+    }
+    for (const row of (legStaffJuncData || []) as any[]) {
+      const oid = staffToOffice[row.staff_id];
+      if (oid && row.ga_engagements) addToOffice(oid, row.ga_engagements, 'staff attendee');
+    }
+
+    // 3. Committee office on engagement
+    const { data: committeeEngs } = await supabase
+      .from('ga_engagements')
+      .select('id, subject, date, type, committee_office_id')
+      .not('committee_office_id', 'is', null);
+    for (const e of (committeeEngs || []) as any[]) {
+      if (e.committee_office_id) addToOffice(e.committee_office_id, { id: e.id, subject: e.subject || 'Untitled', date: e.date || '', type: e.type || '' }, 'committee');
+    }
+
+    // 4. Mentions (already fetched above)
+    for (const [key, engs] of Object.entries(engMap)) {
+      const [mType, mId] = key.split(':');
+      let officeId: string | undefined;
+      if (mType === 'legislator') {
+        officeId = allOffices.find((o) => o.legislator_people_id === Number(mId))?.id;
+      } else if (mType === 'leg_staff') {
+        officeId = staffToOffice[mId];
+      } else if (mType === 'committee') {
+        officeId = mId;
+      }
+      if (officeId) {
+        for (const eng of engs) addToOffice(officeId, eng, 'mentioned');
+      }
+    }
+
+    // Convert maps to sorted arrays (most recent first)
+    const oEngResult: Record<string, { id: string; subject: string; date: string; type: string; source: string }[]> = {};
+    for (const [oid, engMapInner] of Object.entries(oEngMap)) {
+      oEngResult[oid] = Array.from(engMapInner.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }
+    setOfficeEngagements(oEngResult);
+
     setLoading(false);
   };
+
+  // Process ?highlight=type:id URL param after data loads
+  useEffect(() => {
+    if (loading || highlightProcessed.current) return;
+    const hlParam = searchParams.get('highlight');
+    if (!hlParam) return;
+
+    const colonIdx = hlParam.indexOf(':');
+    if (colonIdx < 0) return;
+    const hlType = hlParam.slice(0, colonIdx);
+    const hlId = hlParam.slice(colonIdx + 1);
+
+    let targetOfficeId: string | null = null;
+    let targetElementId: string | null = null;
+    let targetTab: TabType = 'legislator';
+
+    if (hlType === 'legislator') {
+      const pid = Number(hlId);
+      const office = offices.find((o) => o.legislator_people_id === pid);
+      if (office) {
+        targetOfficeId = office.id;
+        targetElementId = `office-${office.id}`;
+        targetTab = 'legislator';
+      }
+    } else if (hlType === 'leg_staff') {
+      for (const [officeId, staffList] of Object.entries(staffMap)) {
+        const staff = staffList.find((s) => s.id === hlId);
+        if (staff) {
+          targetOfficeId = officeId;
+          targetElementId = `staff-${staff.id}`;
+          const office = offices.find((o) => o.id === officeId);
+          targetTab = office?.office_type === 'committee' ? 'committee' : 'legislator';
+          break;
+        }
+      }
+    } else if (hlType === 'committee') {
+      const office = offices.find((o) => o.id === hlId && o.office_type === 'committee');
+      if (office) {
+        targetOfficeId = office.id;
+        targetElementId = `office-${office.id}`;
+        targetTab = 'committee';
+      }
+    }
+
+    if (!targetOfficeId || !targetElementId) return;
+
+    highlightProcessed.current = true;
+    setActiveTab(targetTab);
+    setStateFilter('');
+    setSearchQuery('');
+    setExpandedOffices((prev) => new Set(prev).add(targetOfficeId!));
+    setHighlightId(targetElementId);
+
+    // Clear the param from URL
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('highlight');
+      return next;
+    }, { replace: true });
+
+    // Scroll into view after render
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = document.getElementById(targetElementId!);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    });
+
+    // Remove highlight ring after 3s
+    setTimeout(() => setHighlightId(null), 3000);
+  }, [loading, offices, staffMap, searchParams, setSearchParams]);
 
   // Unique states for filter pills (across both tabs)
   const availableStates = useMemo(() => {
@@ -168,15 +333,19 @@ const LegislativeDirectory: React.FC = () => {
         );
       });
     }
-    // Sort A-Z by last name (last word of the stripped name)
+    // Sort
     return byType.sort((a, b) => {
       const aWords = stripName(a.name).split(/\s+/);
       const bWords = stripName(b.name).split(/\s+/);
       const aLast = (aWords[aWords.length - 1] || '').toLowerCase();
       const bLast = (bWords[bWords.length - 1] || '').toLowerCase();
+      if (sortBy === 'state') {
+        const stateCompare = (a.state || '').localeCompare(b.state || '');
+        if (stateCompare !== 0) return stateCompare;
+      }
       return aLast.localeCompare(bLast);
     });
-  }, [offices, activeTab, searchQuery, stateFilter, staffMap]);
+  }, [offices, activeTab, searchQuery, stateFilter, staffMap, sortBy]);
 
   const toggleExpand = (id: string) => {
     setExpandedOffices((prev) => {
@@ -394,15 +563,28 @@ const LegislativeDirectory: React.FC = () => {
               Committees
             </button>
           </div>
-          <div className="relative w-full sm:w-64 pb-2 sm:pb-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search offices or staff..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-500 outline-none"
-            />
+          <div className="flex items-center gap-2 pb-2 sm:pb-0">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search offices or staff..."
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-500 outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'state')}
+                className="px-2 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-500 outline-none"
+              >
+                <option value="name">Last Name A–Z</option>
+                <option value="state">State, then Name</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -465,7 +647,8 @@ const LegislativeDirectory: React.FC = () => {
                 return (
                   <div
                     key={office.id}
-                    className={`border border-gray-200 rounded-lg overflow-hidden border-l-4 ${getStateBorder(office.state)}`}
+                    id={`office-${office.id}`}
+                    className={`border border-gray-200 rounded-lg overflow-hidden border-l-4 ${getStateBorder(office.state)} transition-shadow duration-500 ${highlightId === `office-${office.id}` ? 'ring-2 ring-teal-400' : ''}`}
                   >
                     {/* Office header */}
                     {editingOfficeId === office.id ? (
@@ -574,7 +757,18 @@ const LegislativeDirectory: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <span className="text-xs text-gray-400 mr-2">{staff.length} staff</span>
+                          <span className="text-xs text-gray-400 mr-1">{staff.length} staff</span>
+                          {(() => {
+                            const key = office.office_type === 'legislator' && office.legislator_people_id
+                              ? `legislator:${office.legislator_people_id}`
+                              : office.office_type === 'committee' ? `committee:${office.id}` : '';
+                            const count = key ? mentionCounts[key] || 0 : 0;
+                            return count > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 text-xs font-medium mr-1" title={`Mentioned in ${count} engagement${count > 1 ? 's' : ''}`}>
+                                <MessageCircle className="w-3 h-3" />{count} mention{count > 1 ? 's' : ''}
+                              </span>
+                            ) : null;
+                          })()}
                           <button
                             onClick={(e) => { e.stopPropagation(); setSmartCaptureTarget({ office, mode: 'legislator' }); }}
                             className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
@@ -612,7 +806,7 @@ const LegislativeDirectory: React.FC = () => {
                           {/* Mobile staff cards */}
                           <div className="sm:hidden divide-y divide-gray-100">
                             {staff.map((s) => (
-                              <div key={s.id} className="px-4 py-3">
+                              <div key={s.id} id={`staff-${s.id}`} className={`px-4 py-3 transition-shadow duration-500 ${highlightId === `staff-${s.id}` ? 'ring-2 ring-teal-400 ring-inset' : ''}`}>
                                 {editingStaffId === s.id ? (
                                   <div className="space-y-2">
                                     <div className="grid grid-cols-2 gap-2">
@@ -632,7 +826,14 @@ const LegislativeDirectory: React.FC = () => {
                                 ) : (
                                   <div className="flex items-center justify-between">
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium text-gray-900">{s.first_name} {s.last_name}</p>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {s.first_name} {s.last_name}
+                                        {(mentionCounts[`leg_staff:${s.id}`] || 0) > 0 && (
+                                          <span className="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 text-xs font-medium">
+                                            <MessageCircle className="w-3 h-3" />{mentionCounts[`leg_staff:${s.id}`]}
+                                          </span>
+                                        )}
+                                      </p>
                                       {s.title && <p className="text-xs text-gray-500">{s.title}</p>}
                                       {s.email && <p className="text-xs text-gray-400">{s.email}</p>}
                                       {s.phone && <p className="text-xs text-gray-400">{s.phone}</p>}
@@ -659,7 +860,7 @@ const LegislativeDirectory: React.FC = () => {
                             </thead>
                             <tbody>
                               {staff.map((s) => (
-                                <tr key={s.id} className="border-t border-gray-100 hover:bg-gray-50">
+                                <tr key={s.id} id={`staff-${s.id}`} className={`border-t border-gray-100 hover:bg-gray-50 transition-shadow duration-500 ${highlightId === `staff-${s.id}` ? 'ring-2 ring-teal-400 ring-inset' : ''}`}>
                                   {editingStaffId === s.id ? (
                                     <>
                                       <td className="px-4 py-2">
@@ -719,7 +920,14 @@ const LegislativeDirectory: React.FC = () => {
                                     </>
                                   ) : (
                                     <>
-                                      <td className="px-4 py-2 text-gray-900">{s.first_name} {s.last_name}</td>
+                                      <td className="px-4 py-2 text-gray-900">
+                                        {s.first_name} {s.last_name}
+                                        {(mentionCounts[`leg_staff:${s.id}`] || 0) > 0 && (
+                                          <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-teal-600" title={`Mentioned in ${mentionCounts[`leg_staff:${s.id}`]} engagement${mentionCounts[`leg_staff:${s.id}`] > 1 ? 's' : ''}`}>
+                                            <MessageCircle className="w-3 h-3" />{mentionCounts[`leg_staff:${s.id}`]}
+                                          </span>
+                                        )}
+                                      </td>
                                       <td className="px-4 py-2 text-gray-600">{s.title || '—'}</td>
                                       <td className="px-4 py-2 text-gray-600">{s.email || '—'}</td>
                                       <td className="px-4 py-2 text-gray-600">{s.phone || '—'}</td>
@@ -748,6 +956,29 @@ const LegislativeDirectory: React.FC = () => {
                             </tbody>
                           </table>
                           </>
+                        )}
+                        {/* Engagements linked to this office */}
+                        {(officeEngagements[office.id] || []).length > 0 && (
+                          <div className="px-4 py-3 border-t border-gray-100 bg-teal-50/40">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <MessageCircle className="w-3.5 h-3.5 text-teal-600" />
+                              <span className="text-xs font-semibold text-teal-800">Engagements ({officeEngagements[office.id].length})</span>
+                            </div>
+                            <div className="space-y-1">
+                              {officeEngagements[office.id].map((eng) => (
+                                <Link
+                                  key={eng.id}
+                                  to={`/advocacy/engagements/${eng.id}`}
+                                  className="flex items-center justify-between px-2.5 py-1.5 bg-white rounded-md text-sm hover:bg-teal-50 transition-colors group border border-gray-100"
+                                >
+                                  <span className="font-medium text-gray-800 group-hover:text-teal-700 truncate">{eng.subject}</span>
+                                  <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                                    {eng.date ? format(new Date(eng.date + 'T00:00:00'), 'MMM d, yyyy') : ''}{eng.type ? ` · ${eng.type}` : ''}
+                                  </span>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
                         )}
                         <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3">
                           <button

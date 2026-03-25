@@ -162,13 +162,15 @@ export interface LegiscanBillDetail {
   raw: any;
 }
 
-function mapLegiscanStatus(statusId: number): string {
+export function mapLegiscanStatus(statusId: number): string {
   // LegiScan status codes → our status values
+  // 1=Introduced, 2=Engrossed (passed one chamber), 3=Enrolled (passed both),
+  // 4=Passed/Enacted, 5=Vetoed, 6=Failed/Dead
   const map: Record<number, string> = {
     1: 'introduced',
-    2: 'in_committee',  // engrossed
-    3: 'passed_house',
-    4: 'signed',        // enacted
+    2: 'passed_house',   // engrossed = passed originating chamber
+    3: 'enrolled',       // enrolled = passed both chambers
+    4: 'signed',         // enacted
     5: 'vetoed',
     6: 'failed',
   };
@@ -263,6 +265,53 @@ export function legiscanBillToFormData(detail: LegiscanBillDetail) {
     legiscan_raw: detail.raw,
     legiscan_sasts: detail.sasts,
   };
+}
+
+/**
+ * Refresh a bill from LegiScan and update it in Supabase.
+ * Returns the updated fields or null if the bill couldn't be fetched.
+ */
+export async function refreshBillFromLegiscan(
+  supabaseBillId: string,
+  legiscanBillId: number,
+): Promise<{ updated: boolean; changes: string[] } | null> {
+  const detail = await getBillDetail(legiscanBillId);
+  if (!detail) return null;
+
+  const formData = legiscanBillToFormData(detail);
+
+  // Fetch current bill to detect what changed
+  const { data: current } = await supabase
+    .from('bills')
+    .select('status, title, description, author')
+    .eq('id', supabaseBillId)
+    .single();
+
+  const changes: string[] = [];
+  if (current) {
+    if (current.status !== formData.status) changes.push(`Status: ${current.status} → ${formData.status}`);
+    if (current.title !== formData.title) changes.push('Title updated');
+    if (current.description !== formData.description) changes.push('Description updated');
+    if (current.author !== formData.author) changes.push('Author updated');
+  }
+
+  const { error } = await supabase
+    .from('bills')
+    .update({
+      status: formData.status,
+      title: formData.title,
+      description: formData.description,
+      author: formData.author,
+      committees: formData.committees,
+      cosponsors: formData.cosponsors,
+      legiscan_raw: formData.legiscan_raw,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', supabaseBillId);
+
+  if (error) throw error;
+
+  return { updated: changes.length > 0, changes };
 }
 
 // LegiScan state_id → abbreviation (from getStateList, 1-indexed)

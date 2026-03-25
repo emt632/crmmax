@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   Save,
   X,
@@ -71,6 +71,7 @@ const ContactForm: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [mentionedEngagements, setMentionedEngagements] = useState<{ id: string; subject: string; date: string; type: string }[]>([]);
   
   const [formData, setFormData] = useState<Partial<Contact>>({
     first_name: '',
@@ -105,6 +106,7 @@ const ContactForm: React.FC = () => {
       fetchContact();
       fetchContactOrganizations();
       fetchTypeAssignments();
+      fetchMentionedEngagements();
     }
   }, [id]);
 
@@ -225,6 +227,28 @@ const ContactForm: React.FC = () => {
       setContactOrganizations(data || []);
     } catch (err) {
       console.error('Failed to fetch contact organizations:', err);
+    }
+  };
+
+  const fetchMentionedEngagements = async () => {
+    if (!id) return;
+    try {
+      const { data, error } = await supabase
+        .from('ga_engagement_mentions')
+        .select('engagement_id, ga_engagements!inner(id, subject, date, type)')
+        .eq('contact_id', id);
+      if (error) throw error;
+      const engagements = (data || []).map((m: any) => ({
+        id: m.ga_engagements.id,
+        subject: m.ga_engagements.subject || 'Untitled',
+        date: m.ga_engagements.date || '',
+        type: m.ga_engagements.type || '',
+      }));
+      // Deduplicate by engagement id
+      const unique = Array.from(new Map(engagements.map((e: any) => [e.id, e])).values());
+      setMentionedEngagements(unique);
+    } catch {
+      setMentionedEngagements([]);
     }
   };
 
@@ -863,6 +887,30 @@ const ContactForm: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mentioned in Engagements */}
+        {isEditing && mentionedEngagements.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center mb-2">
+              <Handshake className="w-4 h-4 mr-1.5 text-teal-600" />
+              <span className="text-sm font-semibold text-gray-800">Mentioned in Engagements ({mentionedEngagements.length})</span>
+            </div>
+            <div className="space-y-1.5">
+              {mentionedEngagements.map((eng) => (
+                <Link
+                  key={eng.id}
+                  to={`/advocacy/engagements/${eng.id}`}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm hover:bg-teal-50 transition-colors group"
+                >
+                  <span className="font-medium text-gray-900 group-hover:text-teal-700">{eng.subject}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                    {eng.date ? format(new Date(eng.date), 'MMM d, yyyy') : ''}{eng.type ? ` · ${eng.type}` : ''}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         )}

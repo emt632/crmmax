@@ -16,7 +16,8 @@ import {
   X,
   Building2,
   Heart,
-  Tag
+  Tag,
+  ArrowUpDown
 } from 'lucide-react';
 import type { Organization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -32,6 +33,8 @@ const OrganizationsList: React.FC = () => {
   const [typeAssignments, setTypeAssignments] = useState<ContactTypeAssignment[]>([]);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'type' | 'newest' | 'city'>('name');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
     fetchOrganizations();
@@ -41,7 +44,7 @@ const OrganizationsList: React.FC = () => {
 
   useEffect(() => {
     filterOrganizations();
-  }, [searchTerm, organizations, selectedTypeFilter, typeAssignments]);
+  }, [searchTerm, organizations, selectedTypeFilter, typeAssignments, sortBy, selectedTags]);
 
   const fetchOrganizations = async () => {
     try {
@@ -107,6 +110,30 @@ const OrganizationsList: React.FC = () => {
         .map(ta => ta.entity_id);
       filtered = filtered.filter(org => orgIds.includes(org.id));
     }
+
+    if (selectedTags.includes('donor')) {
+      filtered = filtered.filter(org => org.is_donor === true);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'type': {
+          const aTypes = getOrgTypes(a.id);
+          const bTypes = getOrgTypes(b.id);
+          const aType = aTypes[0]?.name || '';
+          const bType = bTypes[0]?.name || '';
+          return aType.localeCompare(bType) || a.name.localeCompare(b.name);
+        }
+        case 'newest':
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        case 'city':
+          return (a.city || '').localeCompare(b.city || '') || a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
 
     setFilteredOrganizations(filtered);
   };
@@ -334,15 +361,34 @@ const OrganizationsList: React.FC = () => {
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`inline-flex items-center px-4 py-3 border rounded-xl text-sm font-medium transition-all ${
-                  showFilters
+                className={`inline-flex items-center px-4 py-3 border rounded-xl text-sm font-medium transition-all relative ${
+                  showFilters || selectedTags.length > 0
                     ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                     : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
                 }`}
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
+                {selectedTags.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-600 text-white text-xs rounded-full flex items-center justify-center">
+                    {selectedTags.length}
+                  </span>
+                )}
               </button>
+
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="w-4 h-4 text-gray-400" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="w-full sm:w-auto px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                >
+                  <option value="name">Name A–Z</option>
+                  <option value="type">Type</option>
+                  <option value="newest">Newest First</option>
+                  <option value="city">City</option>
+                </select>
+              </div>
 
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
@@ -362,7 +408,26 @@ const OrganizationsList: React.FC = () => {
           </div>
 
           {showFilters && (
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-gray-200 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() =>
+                    setSelectedTags((prev) =>
+                      prev.includes('donor')
+                        ? prev.filter((t) => t !== 'donor')
+                        : [...prev, 'donor']
+                    )
+                  }
+                  className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    selectedTags.includes('donor')
+                      ? 'bg-green-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Heart className="w-3 h-3 mr-1.5" />
+                  Donors Only
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {contactTypes.map(ct => (
                   <button

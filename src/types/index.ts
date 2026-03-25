@@ -579,6 +579,23 @@ export interface LegislativeOfficeStaff {
   updated_at: string;
 }
 
+// ─── Engagement Mention Types ────────────────────────────
+
+export type MentionType = 'legislator' | 'leg_staff' | 'contact' | 'user' | 'committee';
+
+export interface GAEngagementMention {
+  id: string;
+  engagement_id: string;
+  mention_type: MentionType;
+  legislator_people_id?: number;
+  leg_staff_id?: string;
+  contact_id?: string;
+  user_id?: string;
+  committee_office_id?: string;
+  created_by: string;
+  created_at: string;
+}
+
 // ─── Support Campaign Types ─────────────────────────────
 
 export type SupportAskTargetType =

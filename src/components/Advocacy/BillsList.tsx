@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ScrollText, Plus, Search, Star, Link2, Loader2, Trash2,
+  ScrollText, Plus, Search, Star, Link2, Loader2, Trash2, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,7 +12,7 @@ import {
   BILL_STATUS_COLORS,
   BILL_STATUS_ORDER,
 } from '../../lib/bill-format';
-import { getOurStates } from '../../lib/legiscan-api';
+import { getOurStates, refreshBillFromLegiscan } from '../../lib/legiscan-api';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 const STATUS_PIPELINE_COLORS: Record<string, string> = {
@@ -39,6 +39,9 @@ const BillsList: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState(false);
   const [ourStates, setOurStates] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Bill | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState('');
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBills();
@@ -173,6 +176,36 @@ const BillsList: React.FC = () => {
     fetchBills();
   };
 
+  const handleRefreshAll = async () => {
+    const legiscanBills = bills.filter((b) => b.legiscan_bill_id);
+    if (legiscanBills.length === 0 || refreshing) return;
+
+    setRefreshing(true);
+    setRefreshMsg(null);
+    let updatedCount = 0;
+
+    for (let i = 0; i < legiscanBills.length; i++) {
+      const b = legiscanBills[i];
+      setRefreshProgress(`Refreshing ${i + 1}/${legiscanBills.length}...`);
+      try {
+        const result = await refreshBillFromLegiscan(b.id, b.legiscan_bill_id!);
+        if (result?.updated) updatedCount++;
+      } catch {
+        // Continue with remaining bills
+      }
+    }
+
+    setRefreshProgress('');
+    setRefreshMsg(
+      updatedCount > 0
+        ? `Updated ${updatedCount} bill${updatedCount !== 1 ? 's' : ''}`
+        : 'All bills are up to date',
+    );
+    await fetchBills();
+    setRefreshing(false);
+    setTimeout(() => setRefreshMsg(null), 5000);
+  };
+
   // Filtering
   const filtered = bills.filter((b) => {
     if (filterStatus && b.status !== filterStatus) return false;
@@ -211,15 +244,37 @@ const BillsList: React.FC = () => {
             </h1>
             <p className="mt-2 text-teal-200 text-sm sm:text-base">{bills.length} bill{bills.length !== 1 ? 's' : ''} tracked</p>
           </div>
-          <Link
-            to="/advocacy/bills/new"
-            className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Add Bill</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {bills.some((b) => b.legiscan_bill_id) && (
+              <button
+                onClick={handleRefreshAll}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-colors disabled:opacity-50"
+                title="Refresh all bills from LegiScan"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">
+                  {refreshProgress || 'Refresh All'}
+                </span>
+              </button>
+            )}
+            <Link
+              to="/advocacy/bills/new"
+              className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add Bill</span>
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* Refresh Flash */}
+      {refreshMsg && (
+        <div className="bg-green-50 text-green-700 border border-green-200 rounded-xl px-4 py-3 text-sm font-medium">
+          {refreshMsg}
+        </div>
+      )}
 
       {/* Status Pipeline Bar */}
       {totalBills > 0 && (

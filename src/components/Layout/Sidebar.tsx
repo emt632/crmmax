@@ -121,9 +121,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
           </NavLink>
         )}
 
-        {/* Quick Add */}
+        {/* Quick Add — mobile only */}
         <div
-          className="relative mt-3 pt-3 border-t border-gray-100"
+          className="relative mt-3 pt-3 border-t border-gray-100 sm:hidden"
           onMouseLeave={() => setQuickAddOpen(false)}
         >
           <button
@@ -161,9 +161,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
         {/* ADVO-LINK Section */}
         {hasModule('advoLink') && (
           <div className="mt-3 pt-3 border-t border-gray-100">
-            <p className="px-4 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-              ADVO-LINK
-            </p>
+            <div className="px-4 mb-2">
+              <img src="/advolink-logo.png" alt="AdvoLink" className="h-32 w-auto -my-10 -ml-6" />
+            </div>
             {advocacyItems.map((item) => (
               <NavLink
                 key={item.path}

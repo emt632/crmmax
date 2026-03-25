@@ -23,6 +23,7 @@ import {
   Trash2,
   Loader2,
   CheckSquare,
+  ArrowUpDown,
 } from 'lucide-react';
 import type { Contact, Organization, ContactOrganization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -47,6 +48,7 @@ const ContactsList: React.FC = () => {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [sortBy, setSortBy] = useState<'last_name' | 'first_name' | 'organization' | 'created_at'>('last_name');
 
   useEffect(() => {
     fetchContacts();
@@ -58,7 +60,7 @@ const ContactsList: React.FC = () => {
 
   useEffect(() => {
     filterContacts();
-  }, [searchTerm, selectedOrganization, contacts, selectedTags, selectedTypeFilter, typeAssignments]);
+  }, [searchTerm, selectedOrganization, contacts, selectedTags, selectedTypeFilter, typeAssignments, sortBy, contactOrganizations, organizations]);
 
   const fetchContacts = async () => {
     try {
@@ -238,6 +240,29 @@ const ContactsList: React.FC = () => {
         .map(ta => ta.entity_id);
       filtered = filtered.filter(contact => contactIds.includes(contact.id));
     }
+
+    // Sort
+    const getOrgName = (contactId: string): string => {
+      const co = contactOrganizations.find(c => c.contact_id === contactId && c.is_primary)
+        || contactOrganizations.find(c => c.contact_id === contactId);
+      if (!co) return '';
+      return (organizations.find(o => o.id === co.organization_id)?.name || '').toLowerCase();
+    };
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'last_name':
+          return a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name);
+        case 'first_name':
+          return a.first_name.localeCompare(b.first_name) || a.last_name.localeCompare(b.last_name);
+        case 'organization':
+          return getOrgName(a.id).localeCompare(getOrgName(b.id)) || a.last_name.localeCompare(b.last_name);
+        case 'created_at':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        default:
+          return 0;
+      }
+    });
 
     setFilteredContacts(filtered);
   };
@@ -586,6 +611,20 @@ const ContactsList: React.FC = () => {
                 )}
               </button>
               
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="w-4 h-4 text-gray-400" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="w-full sm:w-auto px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="last_name">Last Name A–Z</option>
+                  <option value="first_name">First Name A–Z</option>
+                  <option value="organization">Organization A–Z</option>
+                  <option value="created_at">Newest First</option>
+                </select>
+              </div>
+
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('list')}

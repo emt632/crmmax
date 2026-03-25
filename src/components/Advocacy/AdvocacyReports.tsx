@@ -30,6 +30,7 @@ import {
 } from '../../lib/bill-format';
 import { getOurStates, resolveUSLegislatorStates } from '../../lib/legiscan-api';
 import ExecSummaryModal from './ExecSummaryModal';
+import { renderNotesWithMentions } from './MentionTextarea';
 
 type SortField = 'date' | 'engagement' | 'subject' | 'jurisdiction' | 'initiative' | 'location' | 'committee' | 'bills' | 'staff' | 'contacts' | 'duration' | 'follow_up';
 type SortDir = 'asc' | 'desc';
@@ -892,7 +893,7 @@ const AdvocacyReports: React.FC = () => {
                 )}
                 {isExpanded && (
                   <div className="pt-2 border-t border-gray-100 space-y-2 text-sm" onClick={(ev) => ev.stopPropagation()}>
-                    {e.notes && <div><span className="font-medium text-gray-700">Notes:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.notes}</p></div>}
+                    {e.notes && <div><span className="font-medium text-gray-700">Notes:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{renderNotesWithMentions(e.notes)}</p></div>}
                     {e.topics_covered && <div><span className="font-medium text-gray-700">Topics:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.topics_covered}</p></div>}
                     {e.meeting_location_detail && <div><span className="font-medium text-gray-700">Location:</span><p className="mt-0.5 text-gray-600">{e.meeting_location_detail}</p></div>}
                     {e.follow_up_notes && <div><span className="font-medium text-gray-700">Follow-Up:</span><p className="mt-0.5 text-gray-600 whitespace-pre-wrap">{e.follow_up_notes}</p></div>}
@@ -1039,7 +1040,7 @@ const AdvocacyReports: React.FC = () => {
                             {e.notes && (
                               <div>
                                 <span className="font-medium text-gray-700">Notes:</span>
-                                <p className="mt-1 text-gray-600 whitespace-pre-wrap">{e.notes}</p>
+                                <p className="mt-1 text-gray-600 whitespace-pre-wrap">{renderNotesWithMentions(e.notes)}</p>
                               </div>
                             )}
                             {e.topics_covered && (
