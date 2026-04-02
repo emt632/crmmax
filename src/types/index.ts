@@ -522,6 +522,19 @@ export interface GAEngagement {
   bills?: { id: string; bill_number: string; title: string }[];
   staff?: { id: string; full_name: string | null; email: string }[];
   contacts?: { id: string; first_name: string; last_name: string }[];
+  attachments?: GAEngagementAttachment[];
+}
+
+export interface GAEngagementAttachment {
+  id: string;
+  engagement_id: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  storage_path: string;
+  public_url: string;
+  uploaded_by: string;
+  created_at: string;
 }
 
 export interface LegiscanLegislator {

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Handshake, ArrowLeft, Save, Loader2, Trash2,
   Users, UserCircle, Building2, Gavel, Calendar, Plus, X,
+  Paperclip, FileText, FileSpreadsheet, Image as ImageIcon, File,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +18,11 @@ import QuickAddCommitteeStaffModal from './QuickAddCommitteeStaffModal';
 import ManageLegStaffModal from './ManageLegStaffModal';
 import InitiativeCombo from './InitiativeCombo';
 import MentionTextarea, { extractMentions } from './MentionTextarea';
+import {
+  uploadAttachment, deleteAttachment, fetchAttachments, validateFile,
+  formatFileSize, ATTACHMENT_ACCEPT,
+  type AttachmentRow,
+} from '../../lib/attachment-upload';
 
 interface EngagementFormData {
   type: GAEngagementType;
@@ -111,6 +117,18 @@ function clearDraft() {
   try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
+function FileTypeIcon({ mimeType }: { mimeType: string }) {
+  if (mimeType === 'application/pdf')
+    return <FileText className="w-4 h-4 text-red-500 shrink-0" />;
+  if (mimeType.includes('word') || mimeType.includes('document'))
+    return <FileText className="w-4 h-4 text-blue-500 shrink-0" />;
+  if (mimeType.includes('sheet') || mimeType.includes('excel'))
+    return <FileSpreadsheet className="w-4 h-4 text-green-500 shrink-0" />;
+  if (mimeType.startsWith('image/'))
+    return <ImageIcon className="w-4 h-4 text-purple-500 shrink-0" />;
+  return <File className="w-4 h-4 text-gray-400 shrink-0" />;
+}
+
 const EngagementForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -168,6 +186,11 @@ const EngagementForm: React.FC = () => {
   const [showManageStaffModal, setShowManageStaffModal] = useState(false);
   const [showAddOfficeModal, setShowAddOfficeModal] = useState(false);
   const [showAddCommitteeStaffModal, setShowAddCommitteeStaffModal] = useState(false);
+
+  // Attachment state
+  const [existingAttachments, setExistingAttachments] = useState<AttachmentRow[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<Set<string>>(new Set());
 
   // Persist draft to sessionStorage on every change (new engagements only)
   useEffect(() => {
@@ -507,6 +530,12 @@ const EngagementForm: React.FC = () => {
       setSelectedLegStaffIds(allLegStaffIds);
     }
 
+    // Fetch existing attachments
+    try {
+      const attachments = await fetchAttachments(id!);
+      setExistingAttachments(attachments);
+    } catch {}
+
     setLoading(false);
   };
 
@@ -621,6 +650,13 @@ const EngagementForm: React.FC = () => {
         }))
       );
     }
+
+    // Handle attachments: delete removed, upload pending
+    const toDelete = existingAttachments.filter((a) => deletedAttachmentIds.has(a.id));
+    await Promise.all(toDelete.map((a) => deleteAttachment(a).catch(() => {})));
+    await Promise.all(
+      pendingFiles.map((f) => uploadAttachment(engagementId!, f, user.id).catch(() => {}))
+    );
 
     setSaving(false);
     clearDraft();
@@ -1102,6 +1138,79 @@ const EngagementForm: React.FC = () => {
               className={`${inputClass} resize-none`}
               placeholder="Meeting notes... use @name to mention someone"
             />
+          </div>
+
+          {/* Attachments */}
+          <div className="border-t border-gray-100 pt-3 mt-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5" />
+                Attachments
+              </span>
+              <label className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 cursor-pointer transition-colors">
+                <Plus className="w-3 h-3" />
+                Add Files
+                <input
+                  type="file"
+                  multiple
+                  accept={ATTACHMENT_ACCEPT}
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const valid: File[] = [];
+                    for (const f of files) {
+                      const err = validateFile(f);
+                      if (err) { alert(err); continue; }
+                      valid.push(f);
+                    }
+                    if (valid.length > 0) setPendingFiles((prev) => [...prev, ...valid]);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+            {(existingAttachments.filter((a) => !deletedAttachmentIds.has(a.id)).length > 0 || pendingFiles.length > 0) && (
+              <div className="space-y-1.5">
+                {existingAttachments
+                  .filter((a) => !deletedAttachmentIds.has(a.id))
+                  .map((a) => (
+                    <div key={a.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg text-sm group">
+                      <FileTypeIcon mimeType={a.mime_type} />
+                      <a
+                        href={a.public_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-700 hover:underline truncate flex-1 min-w-0"
+                      >
+                        {a.file_name}
+                      </a>
+                      <span className="text-xs text-gray-400 shrink-0">{formatFileSize(a.file_size)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDeletedAttachmentIds((prev) => new Set([...prev, a.id]))}
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                {pendingFiles.map((f, i) => (
+                  <div key={`pending-${i}`} className="flex items-center gap-2 px-2.5 py-1.5 bg-teal-50 border border-teal-200 rounded-lg text-sm group">
+                    <FileTypeIcon mimeType={f.type} />
+                    <span className="truncate flex-1 min-w-0 text-gray-700">{f.name}</span>
+                    <span className="text-[10px] font-medium text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded shrink-0">PENDING</span>
+                    <span className="text-xs text-gray-400 shrink-0">{formatFileSize(f.size)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Follow-Up */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Handshake, Plus, Search, Loader2,
-  Users, UserCircle, Building2, Gavel, ScrollText, Clock,
+  Users, UserCircle, Building2, Gavel, ScrollText, Clock, Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -51,6 +51,7 @@ const EngagementsList: React.FC = () => {
   // Junction counts & legislator names
   const [billCounts, setBillCounts] = useState<Record<string, number>>({});
   const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
+  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [legislatorNames, setLegislatorNames] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -78,11 +79,12 @@ const EngagementsList: React.FC = () => {
     if (engList.length > 0) {
       const engIds = engList.map((e) => e.id);
 
-      const [billJunc, staffJunc, contactJunc, legJunc] = await Promise.all([
+      const [billJunc, staffJunc, contactJunc, legJunc, attachJunc] = await Promise.all([
         supabase.from('ga_engagement_bills').select('engagement_id').in('engagement_id', engIds),
         supabase.from('ga_engagement_staff').select('engagement_id').in('engagement_id', engIds),
         supabase.from('ga_engagement_contacts').select('engagement_id').in('engagement_id', engIds),
         supabase.from('ga_engagement_legislators').select('engagement_id, people_id').in('engagement_id', engIds),
+        supabase.from('ga_engagement_attachments').select('engagement_id').in('engagement_id', engIds),
       ]);
 
       const bCounts: Record<string, number> = {};
@@ -96,6 +98,12 @@ const EngagementsList: React.FC = () => {
         aCounts[r.engagement_id] = (aCounts[r.engagement_id] || 0) + 1;
       });
       setAttendeeCounts(aCounts);
+
+      const attCounts: Record<string, number> = {};
+      (attachJunc.data || []).forEach((r: any) => {
+        attCounts[r.engagement_id] = (attCounts[r.engagement_id] || 0) + 1;
+      });
+      setAttachmentCounts(attCounts);
 
       // Build legislator names per engagement
       const legRows = legJunc.data || [];
@@ -270,6 +278,7 @@ const EngagementsList: React.FC = () => {
               const entity = getEntityDisplay(eng);
               const bCount = billCounts[eng.id] || 0;
               const aCount = attendeeCounts[eng.id] || 0;
+              const attCount = attachmentCounts[eng.id] || 0;
 
               return (
                 <Link
@@ -329,6 +338,12 @@ const EngagementsList: React.FC = () => {
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <Users className="w-3 h-3" />
                             {aCount}
+                          </span>
+                        )}
+                        {attCount > 0 && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <Paperclip className="w-3 h-3" />
+                            {attCount}
                           </span>
                         )}
                       </div>

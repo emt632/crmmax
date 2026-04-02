@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Pencil, Star, Loader2, Link2, Users, Handshake,
   ChevronDown, ChevronUp, Clock, Calendar, ExternalLink, RefreshCw,
+  Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,6 +42,7 @@ interface EngagementDetail {
   bills: { id: string; bill_number: string; title: string }[];
   staff: { id: string; full_name: string | null; email: string }[];
   contacts: { id: string; first_name: string; last_name: string }[];
+  attachments: { id: string; file_name: string; public_url: string }[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -149,9 +151,9 @@ function parseHistory(bill: Bill): HistoryEntry[] {
   return [...history].sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function getEntityDisplay(eng: GAEngagement): string {
+function getEntityDisplay(eng: GAEngagement, legNames?: string[]): string {
   switch (eng.type) {
-    case 'legislator_office': return eng.legislator_name || '';
+    case 'legislator_office': return legNames?.join(', ') || eng.legislator_name || '';
     case 'ga_committee': return eng.association_name || '';
     case 'federal_state_entity': return eng.entity_name || '';
     default: return '';
@@ -184,6 +186,9 @@ const BillDetail: React.FC = () => {
   // Refresh state
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+
+  // Legislator names per engagement (from junction table)
+  const [legislatorNames, setLegislatorNames] = useState<Record<string, string[]>>({});
 
   // Expandable states
   const [expandedCommittee, setExpandedCommittee] = useState<number | null>(null);
@@ -251,21 +256,49 @@ const BillDetail: React.FC = () => {
       .in('id', engIds)
       .order('date', { ascending: false });
     setLinkedEngagements((engagements || []) as GAEngagement[]);
+
+    // Fetch legislator names from junction table
+    const { data: legJunc } = await supabase
+      .from('ga_engagement_legislators')
+      .select('engagement_id, people_id')
+      .in('engagement_id', engIds);
+
+    if (legJunc?.length) {
+      const peopleIds = [...new Set(legJunc.map((r: any) => r.people_id))];
+      const [officeRes, legRes] = await Promise.all([
+        supabase.from('legislative_offices').select('name, legislator_people_id').in('legislator_people_id', peopleIds),
+        supabase.from('legiscan_legislators').select('people_id, name').in('people_id', peopleIds),
+      ]);
+
+      const nameByPeopleId: Record<number, string> = {};
+      for (const l of (legRes.data || []) as any[]) nameByPeopleId[l.people_id] = l.name;
+      for (const o of (officeRes.data || []) as any[]) nameByPeopleId[o.legislator_people_id] = o.name;
+
+      const nameMap: Record<string, string[]> = {};
+      for (const r of legJunc as any[]) {
+        if (!nameMap[r.engagement_id]) nameMap[r.engagement_id] = [];
+        const name = nameByPeopleId[r.people_id];
+        if (name) nameMap[r.engagement_id].push(name);
+      }
+      setLegislatorNames(nameMap);
+    }
   };
 
   const fetchEngagementDetail = useCallback(async (engId: string) => {
     if (engagementDetails[engId]) return; // already cached
     setEngDetailLoading(engId);
-    const [billsRes, staffRes, contactsRes] = await Promise.all([
+    const [billsRes, staffRes, contactsRes, attachRes] = await Promise.all([
       supabase.from('ga_engagement_bills').select('bill_id, bills(id, bill_number, title)').eq('engagement_id', engId),
       supabase.from('ga_engagement_staff').select('user_id, users(id, full_name, email)').eq('engagement_id', engId),
       supabase.from('ga_engagement_contacts').select('contact_id, contacts(id, first_name, last_name)').eq('engagement_id', engId),
+      supabase.from('ga_engagement_attachments').select('id, file_name, public_url').eq('engagement_id', engId),
     ]);
 
     const detail: EngagementDetail = {
       bills: (billsRes.data || []).map((r: any) => r.bills).filter(Boolean),
       staff: (staffRes.data || []).map((r: any) => r.users).filter(Boolean),
       contacts: (contactsRes.data || []).map((r: any) => r.contacts).filter(Boolean),
+      attachments: (attachRes.data || []) as { id: string; file_name: string; public_url: string }[],
     };
     setEngagementDetails((prev) => ({ ...prev, [engId]: detail }));
     setEngDetailLoading(null);
@@ -706,7 +739,7 @@ const BillDetail: React.FC = () => {
           <div className="space-y-2">
             {linkedEngagements.map((eng) => {
               const badgeColor = GA_ENGAGEMENT_TYPE_BADGE_COLORS[eng.type] || 'bg-gray-100 text-gray-700';
-              const entity = getEntityDisplay(eng);
+              const entity = getEntityDisplay(eng, legislatorNames[eng.id]);
               const isExpanded = expandedEngagement === eng.id;
               const detail = engagementDetails[eng.id];
               const isLoading = engDetailLoading === eng.id;
@@ -723,8 +756,15 @@ const BillDetail: React.FC = () => {
                       <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
                         {GA_ENGAGEMENT_TYPE_LABELS[eng.type]}
                       </span>
-                      <span className="text-sm font-medium text-gray-900 truncate">{eng.subject}</span>
-                      {entity && <span className="text-xs text-gray-500 truncate hidden sm:inline">- {entity}</span>}
+                      {eng.type === 'legislator_office' && eng.meeting_level && (
+                        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          eng.meeting_level === 'member' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          {eng.meeting_level === 'member' ? 'Member' : 'Staff'}
+                        </span>
+                      )}
+                      {entity && <span className="text-sm font-medium text-gray-900 truncate">{entity}</span>}
+                      <span className="text-sm text-gray-600 truncate">{eng.subject}</span>
                     </div>
                     <div className="flex items-center gap-2 ml-3 shrink-0">
                       <span className="text-xs text-gray-500">{eng.date}</span>
@@ -800,6 +840,26 @@ const BillDetail: React.FC = () => {
                                   >
                                     {c.first_name} {c.last_name}
                                   </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Attachments */}
+                          {detail && detail.attachments.length > 0 && (
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Attachments</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {detail.attachments.map((a) => (
+                                  <a
+                                    key={a.id}
+                                    href={a.public_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                                  >
+                                    <Paperclip className="w-3 h-3" />
+                                    {a.file_name}
+                                  </a>
                                 ))}
                               </div>
                             </div>
