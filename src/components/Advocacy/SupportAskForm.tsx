@@ -267,6 +267,10 @@ const SupportAskForm: React.FC = () => {
   const [contactsLoading, setContactsLoading] = useState(false);
   const [legStaffLoading, setLegStaffLoading] = useState(false);
 
+  // Org-contact pairing: contacts affiliated with selected org
+  const [orgContactOptions, setOrgContactOptions] = useState<{ value: string; label: string; sublabel?: string }[]>([]);
+  const [orgContactsLoading, setOrgContactsLoading] = useState(false);
+
   // Stewardship enabled when status is committed or received
   const stewardshipEnabled = formData.support_status === 'committed' || formData.support_status === 'received';
 
@@ -288,6 +292,41 @@ const SupportAskForm: React.FC = () => {
     fetchLookupData();
     if (id) fetchSupportAsk();
   }, [id]);
+
+  // Fetch contacts affiliated with selected org
+  useEffect(() => {
+    if (formData.target_type !== 'organization' || !formData.target_organization_id) {
+      setOrgContactOptions([]);
+      return;
+    }
+    const fetchOrgContacts = async () => {
+      setOrgContactsLoading(true);
+      const { data: links } = await supabase
+        .from('contact_organizations')
+        .select('contact_id, role')
+        .eq('organization_id', formData.target_organization_id);
+      if (!links || links.length === 0) {
+        setOrgContactOptions([]);
+        setOrgContactsLoading(false);
+        return;
+      }
+      const { data: contacts } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, title')
+        .in('id', links.map((l: any) => l.contact_id));
+      const roleMap: Record<string, string> = {};
+      for (const l of links) roleMap[l.contact_id] = l.role || '';
+      setOrgContactOptions(
+        (contacts || []).map((c: any) => ({
+          value: c.id,
+          label: `${c.first_name} ${c.last_name}`,
+          sublabel: roleMap[c.id] || c.title || undefined,
+        })),
+      );
+      setOrgContactsLoading(false);
+    };
+    fetchOrgContacts();
+  }, [formData.target_organization_id, formData.target_type]);
 
   // Auto-open conversion section when editing and status isn't pending
   useEffect(() => {
@@ -443,7 +482,12 @@ const SupportAskForm: React.FC = () => {
     // Build target fields based on target_type
     const targetFields = {
       target_legislator_people_id: formData.target_type === 'legislator' ? formData.target_legislator_people_id : null,
-      target_contact_id: formData.target_type === 'contact' ? formData.target_contact_id || null : null,
+      target_contact_id:
+        formData.target_type === 'contact'
+          ? formData.target_contact_id || null
+          : formData.target_type === 'organization'
+            ? formData.target_contact_id || null
+            : null,
       target_organization_id: formData.target_type === 'organization' ? formData.target_organization_id || null : null,
       target_leg_staff_id: formData.target_type === 'leg_staff' ? formData.target_leg_staff_id || null : null,
       target_name: formData.target_type === 'other' ? formData.target_name || null : null,
@@ -583,7 +627,17 @@ const SupportAskForm: React.FC = () => {
                 <button
                   key={type}
                   type="button"
-                  onClick={() => handleInputChange('target_type', type)}
+                  onClick={() => {
+                    handleInputChange('target_type', type);
+                    // Clear contact when switching away from contact/org
+                    if (type !== 'contact' && type !== 'organization') {
+                      handleInputChange('target_contact_id', '');
+                    }
+                    // Clear org contact when switching away from org
+                    if (type !== 'organization') {
+                      if (formData.target_type === 'organization') handleInputChange('target_contact_id', '');
+                    }
+                  }}
                   className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all text-center ${
                     formData.target_type === type
                       ? TARGET_TYPE_COLORS[type] + ' border-current'
@@ -611,15 +665,41 @@ const SupportAskForm: React.FC = () => {
             )}
 
             {formData.target_type === 'organization' && (
-              <div>
-                <label className={labelClass}>Organization *</label>
-                <SearchableDropdown
-                  options={organizationOptions}
-                  value={formData.target_organization_id}
-                  onChange={(val) => handleInputChange('target_organization_id', val)}
-                  placeholder="Search organizations..."
-                  loading={orgsLoading}
-                />
+              <div className="space-y-2">
+                <div>
+                  <label className={labelClass}>Organization *</label>
+                  <SearchableDropdown
+                    options={organizationOptions}
+                    value={formData.target_organization_id}
+                    onChange={(val) => {
+                      handleInputChange('target_organization_id', val);
+                      // Reset contact when org changes
+                      handleInputChange('target_contact_id', '');
+                    }}
+                    placeholder="Search organizations..."
+                    loading={orgsLoading}
+                  />
+                </div>
+                {formData.target_organization_id && (
+                  <div>
+                    <label className={labelClass}>Contact at Organization (optional)</label>
+                    {orgContactsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-400 py-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Loading contacts...
+                      </div>
+                    ) : orgContactOptions.length === 0 ? (
+                      <p className="text-xs text-gray-400 py-1.5">No contacts affiliated with this organization</p>
+                    ) : (
+                      <SearchableDropdown
+                        options={orgContactOptions}
+                        value={formData.target_contact_id}
+                        onChange={(val) => handleInputChange('target_contact_id', val)}
+                        placeholder="Search contacts at this org..."
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

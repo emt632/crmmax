@@ -14,7 +14,8 @@ import {
   Mail,
   ChevronRight,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 import type { Organization, ContactType, ContactTypeAssignment, Contact } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -38,8 +39,15 @@ const OrganizationForm: React.FC = () => {
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
   const [showCMSLookup, setShowCMSLookup] = useState(false);
   const [dupWarning, setDupWarning] = useState<{ name: string; id: string } | null>(null);
-  const [affiliatedContacts, setAffiliatedContacts] = useState<(Contact & { role?: string; department?: string; is_primary?: boolean })[]>([]);
+  const [affiliatedContacts, setAffiliatedContacts] = useState<(Contact & { affiliation_id?: string; role?: string; department?: string; is_primary?: boolean })[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [allContacts, setAllContacts] = useState<Contact[]>([]);
+  const [newContactAffiliation, setNewContactAffiliation] = useState({
+    contact_id: '',
+    role: '',
+    department: '',
+    is_primary: false,
+  });
 
   const [formData, setFormData] = useState<Partial<Organization>>({
     name: '',
@@ -61,6 +69,7 @@ const OrganizationForm: React.FC = () => {
 
   useEffect(() => {
     fetchContactTypes();
+    fetchAllContacts();
     if (isEditing) {
       fetchOrganization();
       fetchTypeAssignments();
@@ -153,7 +162,7 @@ const OrganizationForm: React.FC = () => {
 
       const merged = (contacts || []).map(c => {
         const link = links.find(l => l.contact_id === c.id);
-        return { ...c, role: link?.role, department: link?.department, is_primary: link?.is_primary };
+        return { ...c, affiliation_id: link?.id, role: link?.role, department: link?.department, is_primary: link?.is_primary };
       });
 
       setAffiliatedContacts(merged);
@@ -162,6 +171,56 @@ const OrganizationForm: React.FC = () => {
       setAffiliatedContacts([]);
     } finally {
       setLoadingContacts(false);
+    }
+  };
+
+  const fetchAllContacts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .order('last_name');
+      if (error) throw error;
+      setAllContacts(data || []);
+    } catch {
+      setAllContacts([]);
+    }
+  };
+
+  const addContactAffiliation = async () => {
+    if (!id || !newContactAffiliation.contact_id) return;
+    try {
+      const userId = user!.id;
+      const { error } = await supabase
+        .from('contact_organizations')
+        .insert([{
+          contact_id: newContactAffiliation.contact_id,
+          organization_id: id,
+          role: newContactAffiliation.role || null,
+          department: newContactAffiliation.department || null,
+          is_primary: newContactAffiliation.is_primary,
+          created_by: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }]);
+      if (error) throw error;
+      fetchAffiliatedContacts();
+      setNewContactAffiliation({ contact_id: '', role: '', department: '', is_primary: false });
+    } catch (err) {
+      console.error('Failed to add contact affiliation:', err);
+    }
+  };
+
+  const removeContactAffiliation = async (affiliationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_organizations')
+        .delete()
+        .eq('id', affiliationId);
+      if (error) throw error;
+      fetchAffiliatedContacts();
+    } catch (err) {
+      console.error('Failed to remove contact affiliation:', err);
     }
   };
 
@@ -614,73 +673,139 @@ const OrganizationForm: React.FC = () => {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
               </div>
-            ) : affiliatedContacts.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No contacts affiliated with this organization yet.</p>
-                <p className="text-gray-400 text-xs mt-1">
-                  Add this organization as an affiliation from a contact's edit page.
-                </p>
-              </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {affiliatedContacts.map((contact) => (
-                  <Link
-                    key={contact.id}
-                    to={`/contacts/${contact.id}`}
-                    className="flex items-center justify-between py-4 px-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors group"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow-sm">
-                        {contact.photo_url ? (
-                          <img
-                            src={contact.photo_url}
-                            alt={`${contact.first_name} ${contact.last_name}`}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className={`h-full w-full ${getAvatarColor(contact.first_name)} flex items-center justify-center text-white font-semibold text-sm`}>
-                            {getInitials(contact.first_name, contact.last_name)}
+              <>
+                {affiliatedContacts.length > 0 && (
+                  <div className="divide-y divide-gray-100 mb-4">
+                    {affiliatedContacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="flex items-center justify-between py-4 px-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors group"
+                      >
+                        <Link to={`/contacts/${contact.id}`} className="flex items-center space-x-4 flex-1 min-w-0">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow-sm">
+                            {contact.photo_url ? (
+                              <img
+                                src={contact.photo_url}
+                                alt={`${contact.first_name} ${contact.last_name}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className={`h-full w-full ${getAvatarColor(contact.first_name)} flex items-center justify-center text-white font-semibold text-sm`}>
+                                {getInitials(contact.first_name, contact.last_name)}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {contact.first_name} {contact.last_name}
-                        </p>
-                        <div className="flex items-center space-x-3 mt-0.5">
-                          {contact.role && (
-                            <span className="text-xs text-gray-600">{contact.role}</span>
-                          )}
-                          {contact.department && (
-                            <span className="text-xs text-gray-500">| {contact.department}</span>
-                          )}
-                          {!contact.role && contact.title && (
-                            <span className="text-xs text-gray-600">{contact.title}</span>
-                          )}
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {contact.first_name} {contact.last_name}
+                            </p>
+                            <div className="flex items-center space-x-3 mt-0.5">
+                              {contact.role && (
+                                <span className="text-xs text-gray-600">{contact.role}</span>
+                              )}
+                              {contact.department && (
+                                <span className="text-xs text-gray-500">| {contact.department}</span>
+                              )}
+                              {contact.is_primary && (
+                                <span className="px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">Primary</span>
+                              )}
+                              {!contact.role && contact.title && (
+                                <span className="text-xs text-gray-600">{contact.title}</span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                        <div className="flex items-center space-x-4">
+                          <div className="hidden md:flex items-center space-x-4 text-xs text-gray-500">
+                            {contact.email_work && (
+                              <span className="flex items-center">
+                                <Mail className="w-3 h-3 mr-1" />
+                                {contact.email_work}
+                              </span>
+                            )}
+                            {(contact.phone_mobile || contact.phone_office) && (
+                              <span className="flex items-center">
+                                <Phone className="w-3 h-3 mr-1" />
+                                {formatPhone(contact.phone_mobile || contact.phone_office || '')}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => contact.affiliation_id && removeContactAffiliation(contact.affiliation_id)}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+                          <Link to={`/contacts/${contact.id}`}>
+                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                          </Link>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {affiliatedContacts.length === 0 && (
+                  <div className="text-center py-4 mb-4">
+                    <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No contacts affiliated yet.</p>
+                  </div>
+                )}
+
+                {/* Add contact affiliation form */}
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Link a Contact</p>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                    <select
+                      value={newContactAffiliation.contact_id}
+                      onChange={(e) => setNewContactAffiliation({ ...newContactAffiliation, contact_id: e.target.value })}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Select Contact</option>
+                      {allContacts
+                        .filter((c) => !affiliatedContacts.some((ac) => ac.id === c.id))
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                        ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Role/Title"
+                      value={newContactAffiliation.role}
+                      onChange={(e) => setNewContactAffiliation({ ...newContactAffiliation, role: e.target.value })}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Department"
+                      value={newContactAffiliation.department}
+                      onChange={(e) => setNewContactAffiliation({ ...newContactAffiliation, department: e.target.value })}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center text-xs text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={newContactAffiliation.is_primary}
+                          onChange={(e) => setNewContactAffiliation({ ...newContactAffiliation, is_primary: e.target.checked })}
+                          className="mr-1"
+                        />
+                        Primary
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addContactAffiliation}
+                        className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md text-emerald-600 hover:bg-emerald-50"
+                      >
+                        <Plus className="w-3 h-3 mr-0.5" />
+                        Add
+                      </button>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="hidden md:flex items-center space-x-4 text-xs text-gray-500">
-                        {contact.email_work && (
-                          <span className="flex items-center">
-                            <Mail className="w-3 h-3 mr-1" />
-                            {contact.email_work}
-                          </span>
-                        )}
-                        {(contact.phone_mobile || contact.phone_office) && (
-                          <span className="flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {formatPhone(contact.phone_mobile || contact.phone_office || '')}
-                          </span>
-                        )}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

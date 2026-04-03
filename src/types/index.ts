@@ -688,5 +688,6 @@ export interface SupportAsk {
   // Enriched display fields
   requester_name?: string;
   target_display_name?: string;
+  target_contact_display_name?: string;
   bills?: { id: string; bill_number: string; title: string }[];
 }

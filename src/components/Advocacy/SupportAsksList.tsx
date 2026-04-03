@@ -98,6 +98,8 @@ const SupportAsksList: React.FC = () => {
           break;
         case 'organization':
           if (ask.target_organization_id) orgIds.add(ask.target_organization_id);
+          // Also resolve the paired contact for org-type asks
+          if (ask.target_contact_id) contactIds.add(ask.target_contact_id);
           break;
         case 'leg_staff':
           if (ask.target_leg_staff_id) legStaffIds.add(ask.target_leg_staff_id);
@@ -194,9 +196,16 @@ const SupportAsksList: React.FC = () => {
           break;
       }
 
+      // Resolve paired contact name for org-type asks
+      const targetContactDisplayName =
+        ask.target_type === 'organization' && ask.target_contact_id
+          ? contactMap[ask.target_contact_id] || ''
+          : '';
+
       return {
         ...ask,
         target_display_name: targetDisplayName,
+        target_contact_display_name: targetContactDisplayName,
         requester_name: userMap[ask.requester_id] || '',
       };
     });
@@ -216,6 +225,7 @@ const SupportAsksList: React.FC = () => {
       const q = searchQuery.toLowerCase();
       return (
         (a.target_display_name || '').toLowerCase().includes(q) ||
+        (a.target_contact_display_name || '').toLowerCase().includes(q) ||
         (a.initiative || '').toLowerCase().includes(q) ||
         (a.ask_notes || '').toLowerCase().includes(q)
       );
@@ -490,6 +500,9 @@ const SupportAsksList: React.FC = () => {
                       <p className="font-medium text-gray-900">
                         {ask.target_display_name || 'Unnamed Target'}
                       </p>
+                      {ask.target_contact_display_name && (
+                        <p className="text-xs text-gray-500">{ask.target_contact_display_name}</p>
+                      )}
                       {/* Row 3: Initiative + Support type */}
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {ask.initiative && (
