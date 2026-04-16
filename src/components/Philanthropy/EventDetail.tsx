@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SponsorManagerTab from './SponsorManagerTab';
 import RegistrationManagerTab from './RegistrationManagerTab';
@@ -26,7 +26,6 @@ import {
   Users,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import type { PhilEvent, PhilEventType, PhilEventStatus } from '../../types';
 
@@ -266,22 +265,10 @@ function OverviewTab({ event }: { event: PhilEvent }) {
   );
 }
 
-// ─── Placeholder Tab ───────────────────────────────────────
-
-function PlaceholderTab({ name }: { name: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-      <p className="text-lg font-medium text-gray-900">{name}</p>
-      <p className="text-sm text-gray-500 mt-1">Coming soon</p>
-    </div>
-  );
-}
-
 // ─── Main Component ────────────────────────────────────────
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
   const [event, setEvent] = useState<PhilEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');

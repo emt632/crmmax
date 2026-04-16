@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ClipboardList,
   Plus,
@@ -7,7 +7,6 @@ import {
   Check,
   X,
   DollarSign,
-  ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -49,11 +48,11 @@ const SHIRT_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 type PaymentFilter = 'all' | 'paid' | 'unpaid';
 
-interface RegistrationWithJoins extends PhilRegistration {
+type RegistrationWithJoins = Omit<PhilRegistration, 'contact' | 'organization'> & {
   contact?: Pick<Contact, 'id' | 'first_name' | 'last_name'> | null;
   organization?: Pick<Organization, 'id' | 'name'> | null;
   _autoSponsor?: boolean; // display-only: auto-detected from phil_sponsors
-}
+};
 
 interface FormData {
   contact_id: string;

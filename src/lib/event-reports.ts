@@ -33,7 +33,7 @@ interface CartTeam {
 
 export function generateCartSigns(
   eventName: string,
-  eventDate: string | null,
+  _eventDate: string | null,
   teams: CartTeam[]
 ): void {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });

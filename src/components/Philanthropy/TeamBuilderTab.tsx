@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { UsersRound, Plus, X, Loader2, Clock, Hash } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import type { PhilTeam, PhilTeamMember, PhilRegistration } from '../../types';
+import type { PhilTeam, PhilRegistration } from '../../types';
 
 // ─── Props ────────────────────────────────────────────────
 
@@ -161,7 +161,7 @@ export default function TeamBuilderTab({ eventId }: TeamBuilderTabProps) {
   function getContactName(reg: PhilRegistration): string {
     if (reg.contact) {
       const parts = [reg.contact.first_name, reg.contact.last_name].filter(Boolean);
-      return parts.length > 0 ? parts.join(' ') : reg.contact.email || 'Unknown';
+      return parts.length > 0 ? parts.join(' ') : (reg.contact.email_work || reg.contact.email_personal || 'Unknown');
     }
     return 'Unknown Golfer';
   }
