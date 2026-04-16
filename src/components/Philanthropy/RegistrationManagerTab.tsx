@@ -8,6 +8,8 @@ import {
   X,
   DollarSign,
   ChevronUp,
+  Building2,
+  User,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -124,6 +126,23 @@ export default function RegistrationManagerTab({ eventId }: { eventId: string })
   const [contactSearch, setContactSearch] = useState('');
   const [orgSearch, setOrgSearch] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Inline create contact
+  const [showNewContact, setShowNewContact] = useState(false);
+  const [newContactFirst, setNewContactFirst] = useState('');
+  const [newContactLast, setNewContactLast] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [newContactTitle, setNewContactTitle] = useState('');
+  const [savingNewContact, setSavingNewContact] = useState(false);
+
+  // Inline create org
+  const [showNewOrg, setShowNewOrg] = useState(false);
+  const [newOrgName, setNewOrgName] = useState('');
+  const [savingNewOrg, setSavingNewOrg] = useState(false);
+
+  // Prompt to link newly-created contact to org
+  const [promptLinkContact, setPromptLinkContact] = useState(false);
+  const [newlyCreatedContactId, setNewlyCreatedContactId] = useState<string | null>(null);
 
   // ── Fetch registrations ──
 
@@ -320,6 +339,73 @@ export default function RegistrationManagerTab({ eventId }: { eventId: string })
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // ── Inline create: new contact ──
+
+  const createNewContact = async () => {
+    if (!user || !newContactFirst.trim() || !newContactLast.trim()) return;
+    setSavingNewContact(true);
+    const { data, error } = await supabase
+      .from('contacts')
+      .insert({
+        first_name: newContactFirst.trim(),
+        last_name: newContactLast.trim(),
+        email_work: newContactEmail.trim() || null,
+        title: newContactTitle.trim() || null,
+        created_by: user.id,
+      })
+      .select('id, first_name, last_name')
+      .single();
+    setSavingNewContact(false);
+    if (data && !error) {
+      setContacts((prev) =>
+        [...prev, data].sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''))
+      );
+      handleInputChange('contact_id', data.id);
+      setNewlyCreatedContactId(data.id);
+      setNewContactFirst('');
+      setNewContactLast('');
+      setNewContactEmail('');
+      setNewContactTitle('');
+      setShowNewContact(false);
+      if (formData.organization_id) setPromptLinkContact(true);
+    }
+  };
+
+  // ── Inline create: new organization ──
+
+  const createNewOrg = async () => {
+    if (!user || !newOrgName.trim()) return;
+    setSavingNewOrg(true);
+    const { data, error } = await supabase
+      .from('organizations')
+      .insert({ name: newOrgName.trim(), created_by: user.id })
+      .select('id, name')
+      .single();
+    setSavingNewOrg(false);
+    if (data && !error) {
+      setOrganizations((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      handleInputChange('organization_id', data.id);
+      setNewOrgName('');
+      setShowNewOrg(false);
+    }
+  };
+
+  // ── Link a newly-created contact to the selected org ──
+
+  const linkContactToOrg = async () => {
+    if (!user || !newlyCreatedContactId || !formData.organization_id) return;
+    await supabase.from('contact_organizations').insert({
+      contact_id: newlyCreatedContactId,
+      organization_id: formData.organization_id,
+      is_primary: true,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    setPromptLinkContact(false);
+    setNewlyCreatedContactId(null);
+  };
+
   // ── Save registration ──
 
   const handleSave = async () => {
@@ -500,49 +586,130 @@ export default function RegistrationManagerTab({ eventId }: { eventId: string })
               {/* Contact */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                <input
-                  type="text"
-                  placeholder="Search contacts..."
-                  value={contactSearch}
-                  onChange={(e) => setContactSearch(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 mb-1"
-                />
-                <select
-                  value={formData.contact_id}
-                  onChange={(e) => handleInputChange('contact_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                >
-                  <option value="">Select contact...</option>
-                  {filteredContacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name}
-                    </option>
-                  ))}
-                </select>
+                {showNewContact ? (
+                  <div className="space-y-2 bg-rose-50 border border-rose-200 rounded-lg p-3">
+                    <p className="text-xs font-medium text-rose-800">Add new contact to CRM</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <input type="text" value={newContactFirst} onChange={(e) => setNewContactFirst(e.target.value)}
+                        placeholder="First name *" autoFocus
+                        className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                      <input type="text" value={newContactLast} onChange={(e) => setNewContactLast(e.target.value)}
+                        placeholder="Last name *"
+                        className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                    </div>
+                    <input type="email" value={newContactEmail} onChange={(e) => setNewContactEmail(e.target.value)}
+                      placeholder="Email (optional)"
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                    <input type="text" value={newContactTitle} onChange={(e) => setNewContactTitle(e.target.value)}
+                      placeholder="Title (optional)"
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                    <div className="flex gap-1.5">
+                      <button type="button" onClick={createNewContact}
+                        disabled={savingNewContact || !newContactFirst.trim() || !newContactLast.trim()}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-rose-600 text-white rounded-lg text-xs hover:bg-rose-700 disabled:opacity-50 transition">
+                        {savingNewContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Add to CRM
+                      </button>
+                      <button type="button" onClick={() => { setShowNewContact(false); setNewContactFirst(''); setNewContactLast(''); setNewContactEmail(''); setNewContactTitle(''); }}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      placeholder="Search contacts..."
+                      value={contactSearch}
+                      onChange={(e) => setContactSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    />
+                    <select
+                      value={formData.contact_id}
+                      onChange={(e) => handleInputChange('contact_id', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    >
+                      <option value="">Select contact...</option>
+                      {filteredContacts.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.first_name} {c.last_name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => setShowNewContact(true)}
+                      className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-medium">
+                      <User className="w-3 h-3" /> Add new contact to CRM
+                    </button>
+                  </div>
+                )}
+
+                {/* Prompt to link newly-created contact to selected org */}
+                {promptLinkContact && formData.organization_id && (
+                  <div className="mt-2 bg-purple-50 border border-purple-200 rounded-xl p-3">
+                    <p className="text-sm text-purple-900 font-medium">
+                      Link this contact to {organizations.find((o) => o.id === formData.organization_id)?.name}?
+                    </p>
+                    <p className="text-xs text-purple-700 mt-0.5">
+                      This will assign the contact to the organization in the CRM.
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <button type="button" onClick={linkContactToOrg}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition">
+                        Yes, link them
+                      </button>
+                      <button type="button" onClick={() => { setPromptLinkContact(false); setNewlyCreatedContactId(null); }}
+                        className="px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg text-xs transition">
+                        No, skip
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Organization */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
-                <input
-                  type="text"
-                  placeholder="Search organizations..."
-                  value={orgSearch}
-                  onChange={(e) => setOrgSearch(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 mb-1"
-                />
-                <select
-                  value={formData.organization_id}
-                  onChange={(e) => handleInputChange('organization_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                >
-                  <option value="">Select organization...</option>
-                  {filteredOrgs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
+                {showNewOrg ? (
+                  <div className="space-y-2 bg-rose-50 border border-rose-200 rounded-lg p-3">
+                    <p className="text-xs font-medium text-rose-800">Add new organization to CRM</p>
+                    <input type="text" value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)}
+                      placeholder="Organization name *" autoFocus
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                    <div className="flex gap-1.5">
+                      <button type="button" onClick={createNewOrg}
+                        disabled={savingNewOrg || !newOrgName.trim()}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-rose-600 text-white rounded-lg text-xs hover:bg-rose-700 disabled:opacity-50 transition">
+                        {savingNewOrg ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Add to CRM
+                      </button>
+                      <button type="button" onClick={() => { setShowNewOrg(false); setNewOrgName(''); }}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      placeholder="Search organizations..."
+                      value={orgSearch}
+                      onChange={(e) => setOrgSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    />
+                    <select
+                      value={formData.organization_id}
+                      onChange={(e) => handleInputChange('organization_id', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    >
+                      <option value="">Select organization...</option>
+                      {filteredOrgs.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => setShowNewOrg(true)}
+                      className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-medium">
+                      <Building2 className="w-3 h-3" /> Add new organization to CRM
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Role */}
