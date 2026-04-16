@@ -18,9 +18,6 @@ import {
   BookUser,
   Heart,
   CalendarDays,
-  HandHeart,
-  UserCheck,
-  Trophy,
 } from 'lucide-react';
 import ll3Logo from '../../assets/ll3-logo.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -53,11 +50,8 @@ const advocacyItems = [
 ];
 
 const philanthropyItems = [
-  { path: '/philanthropy', label: 'Dashboard', icon: CalendarDays },
+  { path: '/philanthropy', label: 'Dashboard', icon: Home },
   { path: '/philanthropy/events', label: 'Events', icon: CalendarDays },
-  { path: '/philanthropy/donations', label: 'Donations', icon: HandHeart },
-  { path: '/philanthropy/volunteers', label: 'Volunteers', icon: UserCheck },
-  { path: '/philanthropy/contests', label: 'Contests', icon: Trophy },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => {
