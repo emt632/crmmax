@@ -714,7 +714,7 @@ const ContactsList: React.FC = () => {
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900">No contacts found</h3>
             <p className="mt-2 text-sm text-gray-500">
-              {searchTerm || selectedOrganization !== 'all' || selectedTags.length > 0
+              {searchTerm || selectedOrganization !== 'all' || selectedTags.length > 0 || selectedTypeFilter !== 'all'
                 ? 'Try adjusting your filters to find contacts'
                 : 'Get started by creating your first contact'}
             </p>

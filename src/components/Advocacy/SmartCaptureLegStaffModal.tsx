@@ -111,6 +111,13 @@ const SmartCaptureLegStaffModal: React.FC<SmartCaptureLegStaffModalProps> = ({
   const [createNewOffice, setCreateNewOffice] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   // Office search state
   const [officeSearchQuery, setOfficeSearchQuery] = useState('');
   const [showOfficeDropdown, setShowOfficeDropdown] = useState(false);

@@ -381,12 +381,19 @@ const Settings: React.FC = () => {
   const toggleModuleAccess = async (userId: string, module: keyof ModuleAccess) => {
     const current = moduleAccessMap[userId] || { crm: true, philanthropy: false, advoLink: false };
     const updated = { ...current, [module]: !current[module] };
+    const previous = { ...moduleAccessMap };
     setModuleAccessMap((prev) => ({ ...prev, [userId]: updated }));
 
-    await supabase
-      .from('users')
-      .update({ module_access: updated })
-      .eq('id', userId);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ module_access: updated })
+        .eq('id', userId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to update module access:', err);
+      setModuleAccessMap(previous);
+    }
   };
 
   // Association options management

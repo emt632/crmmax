@@ -23,6 +23,13 @@ const AddContactTypeModal: React.FC<AddContactTypeModalProps> = ({ isOpen, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {

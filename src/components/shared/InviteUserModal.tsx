@@ -50,6 +50,13 @@ const InviteUserModal: React.FC<InviteUserModalProps> = ({ isOpen, onClose, onUs
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const fetchUsers = async () => {
     const { data } = await supabase
       .from('users')

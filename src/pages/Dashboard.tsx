@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     if (effectiveUserId) {
@@ -127,6 +127,10 @@ const Dashboard: React.FC = () => {
       if (activeTab === 'my') {
         query = query.or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
       } else if (activeTab === 'team' && !effectiveIsAdmin) {
+        if (effectiveSubordinateIds.length === 0) {
+          setRecentActivities([]);
+          return;
+        }
         query = query.in('created_by', effectiveSubordinateIds);
       }
 
@@ -189,6 +193,10 @@ const Dashboard: React.FC = () => {
       if (activeTab === 'my') {
         query = query.or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
       } else if (activeTab === 'team' && !effectiveIsAdmin) {
+        if (effectiveSubordinateIds.length === 0) {
+          setUpcomingTasks([]);
+          return;
+        }
         query = query.in('created_by', effectiveSubordinateIds);
       }
 

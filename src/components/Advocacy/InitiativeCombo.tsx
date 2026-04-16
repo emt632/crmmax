@@ -36,8 +36,9 @@ const InitiativeCombo: React.FC<InitiativeComboProps> = ({ value, options, onCha
     return o.toLowerCase().includes(query.toLowerCase());
   });
 
-  const exactMatch = options.some((o) => o.toLowerCase() === query.toLowerCase());
-  const showAddNew = query.trim().length > 0 && !exactMatch && !selected.some((s) => s.toLowerCase() === query.trim().toLowerCase());
+  const trimmedQuery = query.trim();
+  const exactMatch = options.some((o) => o.toLowerCase() === trimmedQuery.toLowerCase());
+  const showAddNew = trimmedQuery.length > 0 && !exactMatch && !selected.some((s) => s.toLowerCase() === trimmedQuery.toLowerCase());
 
   const addToSelected = (val: string) => {
     const next = [...selected, val];

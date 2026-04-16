@@ -12,6 +12,13 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose
   const [input, setInput] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setInput(''); onClose(); } };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const handleConfirm = async () => {
     if (input !== 'DELETE') return;
     setDeleting(true);
