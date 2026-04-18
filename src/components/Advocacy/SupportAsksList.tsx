@@ -35,7 +35,8 @@ const OUTREACH_BADGE_COLORS: Record<string, string> = {
 };
 
 const SupportAsksList: React.FC = () => {
-  const { hasModule, effectiveUserId } = useAuth();
+  const { hasModule, effectiveUserId, canEditModule } = useAuth();
+  const canEdit = canEditModule('advoLink');
 
   const [asks, setAsks] = useState<SupportAsk[]>([]);
   const [loading, setLoading] = useState(true);
@@ -291,13 +292,15 @@ const SupportAsksList: React.FC = () => {
               {asks.length > 0 && ` \u00b7 ${overallConversionRate}% conversion rate`}
             </p>
           </div>
-          <Link
-            to="/advocacy/support-campaigns/new"
-            className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Log Support Ask</span>
-          </Link>
+          {canEdit && (
+            <Link
+              to="/advocacy/support-campaigns/new"
+              className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Log Support Ask</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -459,7 +462,7 @@ const SupportAsksList: React.FC = () => {
           <p className="text-gray-500 text-lg">
             {asks.length === 0 ? 'No support asks tracked yet' : 'No support asks match your filters'}
           </p>
-          {asks.length === 0 && (
+          {asks.length === 0 && canEdit && (
             <Link
               to="/advocacy/support-campaigns/new"
               className="mt-3 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"

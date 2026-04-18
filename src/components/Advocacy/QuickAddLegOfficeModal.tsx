@@ -49,6 +49,13 @@ const QuickAddLegOfficeModal: React.FC<QuickAddLegOfficeModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   // Legislator search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<LegiscanLegislator[]>([]);

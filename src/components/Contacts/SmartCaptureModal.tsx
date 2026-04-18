@@ -81,6 +81,13 @@ const SmartCaptureModal: React.FC<SmartCaptureModalProps> = ({
     };
   }, [imagePreviewUrl]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const resetState = () => {
     setActiveTab('text');
     setSignatureText('');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { LegislativeOfficeStaff, LegislativeOffice } from '../../types';
@@ -19,6 +19,12 @@ const QuickAddCommitteeStaffModal: React.FC<QuickAddCommitteeStaffModalProps> = 
   onCreated,
   onClose,
 }) => {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');

@@ -11,10 +11,12 @@ export type UserRole =
   | 'Marketing'
   | 'General';
 
+export type ModuleLevel = 'none' | 'view' | 'edit' | 'admin';
+
 export interface ModuleAccess {
-  crm: boolean;
-  philanthropy: boolean;
-  advoLink: boolean;
+  crm: ModuleLevel;
+  philanthropy: ModuleLevel;
+  advoLink: ModuleLevel;
 }
 
 export interface UserProfile {
@@ -690,4 +692,231 @@ export interface SupportAsk {
   target_display_name?: string;
   target_contact_display_name?: string;
   bills?: { id: string; bill_number: string; title: string }[];
+}
+
+// ─── PhilanthropyMax Types ──────────────────────────────────────────────────
+
+export type PhilEventType = 'golf_outing' | 'gala' | '5k' | 'auction' | 'walkathon' | 'other';
+export type PhilEventStatus = 'planning' | 'open_registration' | 'sold_out' | 'in_progress' | 'completed' | 'cancelled';
+export type PhilPaymentStatus = 'pending' | 'partial' | 'paid' | 'waived';
+export type PhilRegistrationRole = 'golfer' | 'dinner_only' | 'volunteer' | 'vip' | 'speaker';
+export type PhilDonationMethod = 'cash' | 'check' | 'credit_card' | 'ach' | 'other';
+export type PhilInkindCategory = 'goods' | 'services' | 'experiences' | 'food_beverage' | 'printing' | 'venue' | 'other';
+export type PhilContestType = 'longest_drive' | 'closest_to_pin' | 'hole_in_one' | 'putting' | 'other';
+
+export interface PhilEvent {
+  id: string;
+  name: string;
+  event_type: PhilEventType;
+  status: PhilEventStatus;
+  start_date: string | null;
+  end_date: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_city: string | null;
+  venue_state: string | null;
+  venue_zip: string | null;
+  budget_amount: number | null;
+  goal_amount: number | null;
+  capacity: number | null;
+  description: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PhilSponsorTier {
+  id: string;
+  event_id: string;
+  name: string;
+  amount: number;
+  sort_order: number;
+  benefits: string[];
+  max_sponsors: number | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PhilSponsor {
+  id: string;
+  event_id: string;
+  organization_id: string | null;
+  contact_id: string | null;
+  tier_id: string | null;
+  payment_status: PhilPaymentStatus;
+  payment_amount: number;
+  hole_assignment: string | null;
+  logo_received: boolean;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  tier?: PhilSponsorTier;
+  organization?: Organization;
+  contact?: Contact;
+}
+
+export interface PhilRegistration {
+  id: string;
+  event_id: string;
+  contact_id: string | null;
+  organization_id: string | null;
+  role: PhilRegistrationRole;
+  registration_date: string;
+  fee_amount: number;
+  fee_paid: boolean;
+  promo_code: string | null;
+  waiver_signed: boolean;
+  waiver_signed_at: string | null;
+  dietary_restrictions: string | null;
+  shirt_size: string | null;
+  is_sponsor: boolean;
+  is_vip: boolean;
+  checked_in: boolean;
+  checked_in_at: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  contact?: Contact;
+  organization?: Organization;
+}
+
+export interface PhilTeam {
+  id: string;
+  event_id: string;
+  team_name: string;
+  tee_time: string | null;
+  starting_hole: number | null;
+  cart_number: string | null;
+  organization_id?: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  members?: PhilTeamMember[];
+  organization?: Organization;
+}
+
+export interface PhilTeamMember {
+  id: string;
+  team_id: string;
+  registration_id: string;
+  position: number | null;
+  created_by: string;
+  created_at: string;
+  // Joined
+  registration?: PhilRegistration;
+}
+
+export interface PhilCashDonation {
+  id: string;
+  event_id: string;
+  contact_id: string | null;
+  organization_id: string | null;
+  amount: number;
+  donation_date: string;
+  method: PhilDonationMethod;
+  receipt_number: string | null;
+  tax_deductible: boolean;
+  acknowledgement_sent: boolean;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  contact?: Contact;
+  organization?: Organization;
+}
+
+export interface PhilInkindDonation {
+  id: string;
+  event_id: string;
+  contact_id: string | null;
+  organization_id: string | null;
+  item_description: string;
+  category: PhilInkindCategory;
+  fair_market_value: number;
+  intended_use: string | null;
+  quantity: number;
+  acknowledgement_sent: boolean;
+  receipt_issued: boolean;
+  form_8283_required: boolean;
+  form_8283_completed: boolean;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  contact?: Contact;
+  organization?: Organization;
+}
+
+export interface PhilVolunteerRole {
+  id: string;
+  event_id: string;
+  role_name: string;
+  description: string | null;
+  slots_needed: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  shifts?: PhilVolunteerShift[];
+}
+
+export interface PhilVolunteerShift {
+  id: string;
+  role_id: string;
+  shift_label: string;
+  start_time: string | null;
+  end_time: string | null;
+  slots_needed: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  role?: PhilVolunteerRole;
+  assignments?: PhilVolunteerAssignment[];
+}
+
+export interface PhilVolunteerAssignment {
+  id: string;
+  shift_id: string | null;
+  role_id?: string | null;
+  contact_id: string;
+  checked_in: boolean;
+  checked_in_at: string | null;
+  hours_logged: number | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  contact?: Contact;
+  shift?: PhilVolunteerShift;
+}
+
+export interface PhilContest {
+  id: string;
+  event_id: string;
+  contest_type: PhilContestType;
+  hole_number: number | null;
+  prize_description: string | null;
+  prize_value: number | null;
+  winner_registration_id: string | null;
+  winning_result: string | null;
+  sponsor_id: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  winner?: PhilRegistration;
+  sponsor?: PhilSponsor;
 }

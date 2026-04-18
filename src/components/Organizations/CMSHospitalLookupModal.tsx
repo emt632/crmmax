@@ -31,6 +31,14 @@ const CMSHospitalLookupModal: React.FC<CMSHospitalLookupModalProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // ESC key handler
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   // Focus search input when modal opens
   useEffect(() => {
     if (isOpen) {

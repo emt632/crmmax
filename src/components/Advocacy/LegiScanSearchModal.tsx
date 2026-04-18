@@ -23,6 +23,13 @@ const LegiScanSearchModal: React.FC<LegiScanSearchModalProps> = ({ isOpen, onClo
   const [importing, setImporting] = useState<number | null>(null);
   const [error, setError] = useState('');
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);

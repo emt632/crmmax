@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import type { UserProfile } from '../types';
+import type { UserProfile, ModuleLevel } from '../types';
 import { supabase } from '../lib/supabase';
 
 type ModuleName = 'crm' | 'philanthropy' | 'advoLink';
+
+const MODULE_LEVEL_RANK: Record<ModuleLevel, number> = {
+  none: 0,
+  view: 1,
+  edit: 2,
+  admin: 3,
+};
 
 interface AuthContextType {
   // Real identity (always the logged-in user)
@@ -18,6 +25,10 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   hasModule: (module: ModuleName) => boolean;
+  getModuleLevel: (module: ModuleName) => ModuleLevel;
+  hasModuleLevel: (module: ModuleName, min: ModuleLevel) => boolean;
+  canEditModule: (module: ModuleName) => boolean;
+  canAdminModule: (module: ModuleName) => boolean;
 
   // Impersonation
   isImpersonating: boolean;
@@ -213,14 +224,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ? impersonatedProfile?.role === 'admin'
     : isAdmin;
 
-  const hasModule = (module: ModuleName): boolean => {
-    if (effectiveIsAdmin) return true;
-    return effectiveProfile?.module_access?.[module] ?? false;
+  // Resolve a user's level for a given module. Admins always get 'admin'.
+  // Stored values may still be booleans (pre-migration) — normalize them here
+  // so the UI continues to work even before migration 033 has run.
+  const getModuleLevel = (module: ModuleName): ModuleLevel => {
+    if (effectiveIsAdmin) return 'admin';
+    const raw = effectiveProfile?.module_access?.[module];
+    if (raw === 'none' || raw === 'view' || raw === 'edit' || raw === 'admin') return raw;
+    // Legacy boolean fallback
+    if (raw === true || (raw as any) === 'true') return 'edit';
+    return 'none';
   };
+
+  const hasModuleLevel = (module: ModuleName, min: ModuleLevel): boolean =>
+    MODULE_LEVEL_RANK[getModuleLevel(module)] >= MODULE_LEVEL_RANK[min];
+
+  // Backward-compatible: "has module" means at least view access
+  const hasModule = (module: ModuleName): boolean => hasModuleLevel(module, 'view');
+  const canEditModule = (module: ModuleName): boolean => hasModuleLevel(module, 'edit');
+  const canAdminModule = (module: ModuleName): boolean => hasModuleLevel(module, 'admin');
 
   const value = useMemo(() => ({
     user, profile, session, loading, isAdmin, isManager, subordinateIds,
-    signIn, signOut, refreshProfile, hasModule,
+    signIn, signOut, refreshProfile,
+    hasModule, getModuleLevel, hasModuleLevel, canEditModule, canAdminModule,
     // Impersonation
     isImpersonating, impersonatedProfile,
     startImpersonating, stopImpersonating,

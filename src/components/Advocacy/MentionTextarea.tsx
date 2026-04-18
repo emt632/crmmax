@@ -451,7 +451,8 @@ const MentionTextarea: React.FC<MentionTextareaProps> = ({
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 mt-1 w-80 max-h-72 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200"
+          className="absolute z-50 mt-1 w-80 max-h-72 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 bottom-full mb-1 sm:bottom-auto sm:mb-0 sm:top-full sm:mt-1"
+          style={{ maxHeight: 'min(288px, 40vh)' }}
         >
           <div className="px-3 py-2 border-b border-gray-100 text-xs text-gray-400">
             {query ? `Searching "${query}"...` : 'Type to search people & committees'}

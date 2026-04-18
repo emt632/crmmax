@@ -26,6 +26,16 @@ import AdvocacyReports from './components/Advocacy/AdvocacyReports';
 import LegislativeDirectory from './components/Advocacy/LegislativeDirectory';
 import SupportAsksList from './components/Advocacy/SupportAsksList';
 import SupportAskForm from './components/Advocacy/SupportAskForm';
+import PhilanthropyDashboard from './components/Philanthropy/PhilanthropyDashboard';
+import EventsList from './components/Philanthropy/EventsList';
+import EventForm from './components/Philanthropy/EventForm';
+import EventDetail from './components/Philanthropy/EventDetail';
+import SponsorsListAll from './components/Philanthropy/SponsorsListAll';
+import RegistrationsListAll from './components/Philanthropy/RegistrationsListAll';
+import TeamsListAll from './components/Philanthropy/TeamsListAll';
+import DonationsListAll from './components/Philanthropy/DonationsListAll';
+import VolunteersListAll from './components/Philanthropy/VolunteersListAll';
+import ContestsListAll from './components/Philanthropy/ContestsListAll';
 
 function App() {
   return (
@@ -64,6 +74,17 @@ function App() {
               <Route path="advocacy/support-campaigns/:id" element={<SupportAskForm />} />
               <Route path="advocacy/directory" element={<LegislativeDirectory />} />
               <Route path="advocacy/reports" element={<AdvocacyReports />} />
+              <Route path="philanthropy" element={<PhilanthropyDashboard />} />
+              <Route path="philanthropy/events" element={<EventsList />} />
+              <Route path="philanthropy/events/new" element={<EventForm />} />
+              <Route path="philanthropy/events/:id" element={<EventDetail />} />
+              <Route path="philanthropy/events/:id/edit" element={<EventForm />} />
+              <Route path="philanthropy/sponsors" element={<SponsorsListAll />} />
+              <Route path="philanthropy/registrations" element={<RegistrationsListAll />} />
+              <Route path="philanthropy/teams" element={<TeamsListAll />} />
+              <Route path="philanthropy/donations" element={<DonationsListAll />} />
+              <Route path="philanthropy/volunteers" element={<VolunteersListAll />} />
+              <Route path="philanthropy/contests" element={<ContestsListAll />} />
               <Route path="share-target" element={<ShareTarget />} />
               <Route path="reports" element={<Reports />} />
               <Route path="team-activity" element={<TeamActivity />} />

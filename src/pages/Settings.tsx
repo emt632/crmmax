@@ -23,7 +23,7 @@ import {
   Landmark,
   Shield,
 } from 'lucide-react';
-import type { ContactType, UserProfile, UserRole, ModuleAccess } from '../types';
+import type { ContactType, UserProfile, UserRole, ModuleAccess, ModuleLevel } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getOurStates, getAssociationOptions, getInitiativeOptions, setAdvoLinkSetting } from '../lib/legiscan-api';
@@ -164,10 +164,21 @@ const Settings: React.FC = () => {
       const users = (data || []) as UserProfile[];
       setAllUsers(users);
 
-      // Build module access map
+      // Build module access map. Normalize legacy boolean values to levels
+      // so the UI works even before migration 033 has been run.
       const maMap: Record<string, ModuleAccess> = {};
       users.forEach((u) => {
-        maMap[u.id] = u.module_access || { crm: true, philanthropy: false, advoLink: false };
+        const raw = (u.module_access as any) || {};
+        const normalize = (v: any): ModuleLevel => {
+          if (v === 'none' || v === 'view' || v === 'edit' || v === 'admin') return v;
+          if (v === true || v === 'true') return 'edit';
+          return 'none';
+        };
+        maMap[u.id] = {
+          crm: normalize(raw.crm ?? true),
+          philanthropy: normalize(raw.philanthropy),
+          advoLink: normalize(raw.advoLink),
+        };
       });
       setModuleAccessMap(maMap);
     } catch {
@@ -377,16 +388,24 @@ const Settings: React.FC = () => {
     }
   };
 
-  // Module access toggle
-  const toggleModuleAccess = async (userId: string, module: keyof ModuleAccess) => {
-    const current = moduleAccessMap[userId] || { crm: true, philanthropy: false, advoLink: false };
-    const updated = { ...current, [module]: !current[module] };
+  // Set a specific access level for a user/module
+  const setModuleAccess = async (userId: string, module: keyof ModuleAccess, level: ModuleLevel) => {
+    const current = moduleAccessMap[userId] || { crm: 'edit' as ModuleLevel, philanthropy: 'none' as ModuleLevel, advoLink: 'none' as ModuleLevel };
+    if (current[module] === level) return;
+    const updated: ModuleAccess = { ...current, [module]: level };
+    const previous = { ...moduleAccessMap };
     setModuleAccessMap((prev) => ({ ...prev, [userId]: updated }));
 
-    await supabase
-      .from('users')
-      .update({ module_access: updated })
-      .eq('id', userId);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ module_access: updated })
+        .eq('id', userId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to update module access:', err);
+      setModuleAccessMap(previous);
+    }
   };
 
   // Association options management
@@ -1072,8 +1091,15 @@ const Settings: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-900">Module Access</h2>
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                Control which modules each user can access. Admins always have full access.
+                Set a per-module access level for each user. Admins always have full access to every module.
               </p>
+              {/* Legend */}
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-600">
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-400" /> <strong>None</strong> — hidden</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> <strong>View</strong> — read only</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" /> <strong>Edit</strong> — create and modify</span>
+                <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> <strong>Admin</strong> — delete and settings</span>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1088,7 +1114,7 @@ const Settings: React.FC = () => {
                 <tbody className="divide-y divide-gray-200">
                   {allUsers.filter((u) => u.is_active).map((u) => {
                     const isAdminUser = u.role === 'admin';
-                    const access = moduleAccessMap[u.id] || { crm: true, philanthropy: false, advoLink: false };
+                    const access: ModuleAccess = moduleAccessMap[u.id] || { crm: 'edit', philanthropy: 'none', advoLink: 'none' };
                     return (
                       <tr key={u.id} className="hover:bg-gray-50">
                         <td className="px-6 py-3">
@@ -1097,28 +1123,42 @@ const Settings: React.FC = () => {
                             <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
                           )}
                         </td>
-                        {(['crm', 'philanthropy', 'advoLink'] as const).map((mod) => (
-                          <td key={mod} className="text-center px-4 py-3">
-                            <button
-                              onClick={() => toggleModuleAccess(u.id, mod)}
-                              disabled={isAdminUser}
-                              className={`p-1 rounded-lg transition-colors ${
-                                isAdminUser
-                                  ? 'text-green-500 cursor-not-allowed'
-                                  : access[mod]
-                                    ? 'text-green-600 hover:bg-green-50'
-                                    : 'text-gray-300 hover:bg-gray-100'
-                              }`}
-                              title={isAdminUser ? 'Admin always has access' : `Toggle ${mod}`}
-                            >
-                              {(isAdminUser || access[mod]) ? (
-                                <ToggleRight className="w-6 h-6" />
-                              ) : (
-                                <ToggleLeft className="w-6 h-6" />
-                              )}
-                            </button>
-                          </td>
-                        ))}
+                        {(['crm', 'philanthropy', 'advoLink'] as const).map((mod) => {
+                          const current: ModuleLevel = isAdminUser ? 'admin' : access[mod];
+                          const LEVELS: { value: ModuleLevel; label: string; active: string }[] = [
+                            { value: 'none',  label: 'None',  active: 'bg-gray-500 text-white' },
+                            { value: 'view',  label: 'View',  active: 'bg-blue-500 text-white' },
+                            { value: 'edit',  label: 'Edit',  active: 'bg-green-500 text-white' },
+                            { value: 'admin', label: 'Admin', active: 'bg-rose-500 text-white' },
+                          ];
+                          return (
+                            <td key={mod} className="text-center px-4 py-3">
+                              <div
+                                className={`inline-flex rounded-lg overflow-hidden border border-gray-200 ${isAdminUser ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                title={isAdminUser ? 'Admin always has full access' : `Set ${mod} access level`}
+                              >
+                                {LEVELS.map((lvl) => {
+                                  const isActive = lvl.value === current;
+                                  return (
+                                    <button
+                                      key={lvl.value}
+                                      type="button"
+                                      onClick={() => !isAdminUser && setModuleAccess(u.id, mod, lvl.value)}
+                                      disabled={isAdminUser}
+                                      className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                                        isActive
+                                          ? lvl.active
+                                          : 'bg-white text-gray-500 hover:bg-gray-50'
+                                      } ${isAdminUser ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                    >
+                                      {lvl.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })}

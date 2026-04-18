@@ -17,6 +17,7 @@ import {
   FileBarChart,
   BookUser,
   Heart,
+  CalendarDays,
 } from 'lucide-react';
 import ll3Logo from '../../assets/ll3-logo.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,6 +47,11 @@ const advocacyItems = [
   { path: '/advocacy/support-campaigns', label: 'Support Tracker', icon: Heart },
   { path: '/advocacy/directory', label: 'Directory', icon: BookUser },
   { path: '/advocacy/reports', label: 'Reports', icon: FileBarChart },
+];
+
+const philanthropyItems = [
+  { path: '/philanthropy', label: 'Dashboard', icon: Home },
+  { path: '/philanthropy/events', label: 'Events', icon: CalendarDays },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => {
@@ -174,6 +180,33 @@ const Sidebar: React.FC<SidebarProps> = ({ onSignOut, userEmail, userName }) => 
                   `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive
                       ? 'bg-teal-50 text-teal-600 border border-teal-100'
+                      : 'text-gray-700 hover:bg-gray-50 border border-transparent'
+                  }`
+                }
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        )}
+
+        {/* PhilanthropyMax Section */}
+        {hasModule('philanthropy') && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="px-4 mb-2">
+              <span className="text-sm font-bold tracking-wide text-rose-600 uppercase">PhilanthropyMax</span>
+            </div>
+            {philanthropyItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/philanthropy'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? 'bg-rose-50 text-rose-600 border border-rose-100'
                       : 'text-gray-700 hover:bg-gray-50 border border-transparent'
                   }`
                 }
