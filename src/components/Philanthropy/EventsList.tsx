@@ -64,7 +64,8 @@ const formatDateRange = (start: string | null, end: string | null): string => {
 };
 
 const EventsList: React.FC = () => {
-  const { hasModule } = useAuth();
+  const { hasModule, canEditModule } = useAuth();
+  const canEdit = canEditModule('philanthropy');
 
   const [events, setEvents] = useState<PhilEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,13 +124,15 @@ const EventsList: React.FC = () => {
               <p className="text-rose-200 text-sm">Manage fundraising events and galas</p>
             </div>
           </div>
-          <Link
-            to="/philanthropy/events/new"
-            className="inline-flex items-center gap-2 bg-white text-rose-700 px-4 py-2 rounded-lg font-semibold hover:bg-rose-50 transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            New Event
-          </Link>
+          {canEdit && (
+            <Link
+              to="/philanthropy/events/new"
+              className="inline-flex items-center gap-2 bg-white text-rose-700 px-4 py-2 rounded-lg font-semibold hover:bg-rose-50 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              New Event
+            </Link>
+          )}
         </div>
       </div>
 
@@ -184,7 +187,7 @@ const EventsList: React.FC = () => {
               ? 'Get started by creating your first fundraising event.'
               : 'Try adjusting your search or filters.'}
           </p>
-          {events.length === 0 && (
+          {events.length === 0 && canEdit && (
             <Link
               to="/philanthropy/events/new"
               className="inline-flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-rose-700 transition-colors"

@@ -78,7 +78,7 @@ const emptyForm: EventFormData = {
 export default function EventForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canEditModule } = useAuth();
 
   const isEdit = Boolean(id);
 
@@ -86,6 +86,13 @@ export default function EventForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Access gate — redirect away if user can't edit
+  useEffect(() => {
+    if (!canEditModule('philanthropy')) {
+      navigate('/philanthropy/events', { replace: true });
+    }
+  }, [canEditModule, navigate]);
 
   // ── Fetch existing event for edit mode ──────────────────────────────────
   useEffect(() => {

@@ -27,7 +27,8 @@ const STATUS_PIPELINE_COLORS: Record<string, string> = {
 };
 
 const BillsList: React.FC = () => {
-  const { user, hasModule } = useAuth();
+  const { user, hasModule, canEditModule } = useAuth();
+  const canEdit = canEditModule('advoLink');
   const navigate = useNavigate();
 
   const [bills, setBills] = useState<Bill[]>([]);
@@ -258,13 +259,15 @@ const BillsList: React.FC = () => {
                 </span>
               </button>
             )}
-            <Link
-              to="/advocacy/bills/new"
-              className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Add Bill</span>
-            </Link>
+            {canEdit && (
+              <Link
+                to="/advocacy/bills/new"
+                className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">Add Bill</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -384,7 +387,7 @@ const BillsList: React.FC = () => {
           <p className="text-gray-500 text-lg">
             {bills.length === 0 ? 'No bills tracked yet' : 'No bills match your filters'}
           </p>
-          {bills.length === 0 && (
+          {bills.length === 0 && canEdit && (
             <Link
               to="/advocacy/bills/new"
               className="mt-3 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"

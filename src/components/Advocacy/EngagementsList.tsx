@@ -40,7 +40,8 @@ function formatOfficeName(name: string, chamber?: string): string {
 }
 
 const EngagementsList: React.FC = () => {
-  const { hasModule, effectiveUserId } = useAuth();
+  const { hasModule, effectiveUserId, canEditModule } = useAuth();
+  const canEdit = canEditModule('advoLink');
 
   const [engagements, setEngagements] = useState<GAEngagement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,13 +196,15 @@ const EngagementsList: React.FC = () => {
             </h1>
             <p className="mt-2 text-teal-200 text-sm sm:text-base">{engagements.length} engagement{engagements.length !== 1 ? 's' : ''} logged</p>
           </div>
-          <Link
-            to="/advocacy/engagements/new"
-            className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Log Engagement</span>
-          </Link>
+          {canEdit && (
+            <Link
+              to="/advocacy/engagements/new"
+              className="flex items-center gap-2 px-5 py-3 bg-white text-teal-700 rounded-xl font-semibold hover:bg-teal-50 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Log Engagement</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -260,7 +263,7 @@ const EngagementsList: React.FC = () => {
           <p className="text-gray-500 text-lg">
             {engagements.length === 0 ? 'No engagements logged yet' : 'No engagements match your filters'}
           </p>
-          {engagements.length === 0 && (
+          {engagements.length === 0 && canEdit && (
             <Link
               to="/advocacy/engagements/new"
               className="mt-3 inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"

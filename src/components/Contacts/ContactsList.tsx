@@ -30,8 +30,11 @@ import { supabase } from '../../lib/supabase';
 import { formatPhone } from '../../lib/format-phone';
 import { contactsToVCardFile, downloadVCard } from '../../lib/vcard';
 import { deleteContactPhoto } from '../../lib/photo-upload';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ContactsList: React.FC = () => {
+  const { canEditModule } = useAuth();
+  const canEdit = canEditModule('crm');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -532,13 +535,15 @@ const ContactsList: React.FC = () => {
               <Upload className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Import</span>
             </Link>
-            <Link
-              to="/contacts/new"
-              className="inline-flex items-center px-5 py-2.5 bg-white text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contact
-            </Link>
+            {canEdit && (
+              <Link
+                to="/contacts/new"
+                className="inline-flex items-center px-5 py-2.5 bg-white text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors shadow-lg"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Contact
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -718,15 +723,17 @@ const ContactsList: React.FC = () => {
                 ? 'Try adjusting your filters to find contacts'
                 : 'Get started by creating your first contact'}
             </p>
-            <div className="mt-6">
-              <Link
-                to="/contacts/new"
-                className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Contact
-              </Link>
-            </div>
+            {canEdit && (
+              <div className="mt-6">
+                <Link
+                  to="/contacts/new"
+                  className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Contact
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       ) : viewMode === 'list' ? (

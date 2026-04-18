@@ -11,10 +11,12 @@ export type UserRole =
   | 'Marketing'
   | 'General';
 
+export type ModuleLevel = 'none' | 'view' | 'edit' | 'admin';
+
 export interface ModuleAccess {
-  crm: boolean;
-  philanthropy: boolean;
-  advoLink: boolean;
+  crm: ModuleLevel;
+  philanthropy: ModuleLevel;
+  advoLink: ModuleLevel;
 }
 
 export interface UserProfile {

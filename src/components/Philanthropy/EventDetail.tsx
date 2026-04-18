@@ -26,6 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import type { PhilEvent, PhilEventType, PhilEventStatus } from '../../types';
 
@@ -269,6 +270,8 @@ function OverviewTab({ event }: { event: PhilEvent }) {
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
+  const { canEditModule } = useAuth();
+  const canEdit = canEditModule('philanthropy');
   const [event, setEvent] = useState<PhilEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -359,13 +362,15 @@ export default function EventDetail() {
             <ArrowLeft className="w-4 h-4" />
             Back to Events
           </Link>
-          <Link
-            to={`/philanthropy/events/${id}/edit`}
-            className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Pencil className="w-4 h-4" />
-            Edit
-          </Link>
+          {canEdit && (
+            <Link
+              to={`/philanthropy/events/${id}/edit`}
+              className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Link>
+          )}
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold mb-3">{event.name}</h1>

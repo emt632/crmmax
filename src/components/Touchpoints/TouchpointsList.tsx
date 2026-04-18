@@ -34,7 +34,9 @@ const TOUCHPOINT_TYPE_CONFIG: Record<TouchpointType, { icon: React.FC<any>; colo
 const TouchpointsList: React.FC = () => {
   const {
     effectiveUserId, effectiveIsAdmin, effectiveIsManager, effectiveSubordinateIds,
+    canEditModule,
   } = useAuth();
+  const canEdit = canEditModule('crm');
   const [touchpoints, setTouchpoints] = useState<Touchpoint[]>([]);
   const [filteredTouchpoints, setFilteredTouchpoints] = useState<Touchpoint[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -258,15 +260,17 @@ const TouchpointsList: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="mt-6 lg:mt-0">
-            <Link
-              to="/touchpoints/new"
-              className="inline-flex items-center px-5 py-2.5 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Log Touchpoint
-            </Link>
-          </div>
+          {canEdit && (
+            <div className="mt-6 lg:mt-0">
+              <Link
+                to="/touchpoints/new"
+                className="inline-flex items-center px-5 py-2.5 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors shadow-lg"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Log Touchpoint
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,15 +400,17 @@ const TouchpointsList: React.FC = () => {
                 ? 'Try adjusting your filters'
                 : 'Get started by logging your first touchpoint'}
             </p>
-            <div className="mt-6">
-              <Link
-                to="/touchpoints/new"
-                className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Log Your First Touchpoint
-              </Link>
-            </div>
+            {canEdit && (
+              <div className="mt-6">
+                <Link
+                  to="/touchpoints/new"
+                  className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Log Your First Touchpoint
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       ) : (

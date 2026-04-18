@@ -21,8 +21,11 @@ import {
 } from 'lucide-react';
 import type { Organization, ContactType, ContactTypeAssignment } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 const OrganizationsList: React.FC = () => {
+  const { canEditModule } = useAuth();
+  const canEdit = canEditModule('crm');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [filteredOrganizations, setFilteredOrganizations] = useState<Organization[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -311,13 +314,15 @@ const OrganizationsList: React.FC = () => {
               <Download className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
             </button>
-            <Link
-              to="/organizations/new"
-              className="inline-flex items-center px-5 py-2.5 bg-white text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-50 transition-colors shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Organization
-            </Link>
+            {canEdit && (
+              <Link
+                to="/organizations/new"
+                className="inline-flex items-center px-5 py-2.5 bg-white text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-50 transition-colors shadow-lg"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Organization
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -478,15 +483,17 @@ const OrganizationsList: React.FC = () => {
                 ? 'Try adjusting your filters to find organizations'
                 : 'Get started by creating your first organization'}
             </p>
-            <div className="mt-6">
-              <Link
-                to="/organizations/new"
-                className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-md"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Organization
-              </Link>
-            </div>
+            {canEdit && (
+              <div className="mt-6">
+                <Link
+                  to="/organizations/new"
+                  className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-md"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Organization
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       ) : viewMode === 'list' ? (
